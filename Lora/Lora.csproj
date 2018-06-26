@@ -51,6 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Events\DeviceUpdateEvent.cs" />
     <Compile Include="lib\LoraConnector.cs" />
     <Compile Include="LoraController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -58,5 +59,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
