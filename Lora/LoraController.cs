@@ -9,12 +9,12 @@ namespace Fraunhofer.Fit.Iot.Lora {
   public class LoraController {
     public LoraController() {
       Int64 freq = 868100000;
-      Int32 sf = 7;
-      LoraConnector l = new LoraConnector(freq, Unosquare.RaspberryIO.Pi.Gpio.Pin06, Unosquare.RaspberryIO.Pi.Gpio.Pin07, Unosquare.RaspberryIO.Pi.Gpio.Pin00);
-      //l.EnableCrc();
+      LoraConnector l = new LoraConnector(Unosquare.RaspberryIO.Pi.Gpio.Pin06, Unosquare.RaspberryIO.Pi.Gpio.Pin07, Unosquare.RaspberryIO.Pi.Gpio.Pin00);
+      l.Begin(freq);
+      l.EnableCrc();
       l.Receive(0);
       l.Update += this.ReceivePacket;
-      Console.WriteLine("Listening at SF"+ sf + " on "+((Double)freq / 1000000) +" Mhz.");
+      Console.WriteLine("Listening at SF"+ l.GetSpreadingFactor() + " on "+((Double)freq / 1000000) +" Mhz.");
       Console.WriteLine("------------------");
       l.OnReceive();
       while (true) {
