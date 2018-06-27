@@ -1,17 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Fraunhofer.Fit.Iot.Lora.Events;
+using System;
 using System.Text;
-using System.Threading.Tasks;
-using Fraunhofer.Fit.Iot.Lora.Events;
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Gpio;
 
-namespace Fraunhofer.Fit.Iot.Lora.lib {
+namespace Fraunhofer.Fit.Iot.Lora.lib
+{
   public class LoraConnector {
     private Int64 _frequency = 0;
     private Byte _packetIndex = 0;
     private Boolean _implictHeaderMode = false;
+    private GpioPin ssPin;
+    private GpioPin dio0;
+    private GpioPin RST;
+
     public delegate void DataUpdate(Object sender, DeviceUpdateEvent e);
     public event DataUpdate Update;
 
@@ -69,8 +71,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       RX_DONE_MASK = 0x40
     }
 
-    public LoraConnector(Int64 freq) {
-      Console.WriteLine("LoraConnector.LoraConnector("+ freq + ")");
+    public LoraConnector(Int64 freq, GpioPin ssPin, GpioPin dio0, GpioPin RST) {
+      this.ssPin = ssPin;
+      this.dio0 = dio0;
+      this.RST = RST;
       this.SetupIO();
       this.Reset();
       Byte version = ReadRegister(Registers.VERSION);
@@ -92,15 +96,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     
     #region Methods
     public void Sleep() {
-      Console.WriteLine("LoraConnector.Sleep()");
       this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.SLEEP);
     }
     private void Ilde() {
-      Console.WriteLine("LoraConnector.Ilde()");
       this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.STDBY);
     }
     public void SetFrequency(Int64 freq) {
-      Console.WriteLine("LoraConnector.SetFrequencey(" + freq + ")");
       this._frequency = freq;
 
       UInt64 frf = ((UInt64)freq << 19) / 32000000;
@@ -109,7 +110,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       this.WriteRegister(Registers.FRF_LSB, (Byte)(frf >> 0));
     }
     public void SetTxPower(Int32 level, Int32 outputPin = 1) {
-      Console.WriteLine("LoraConnector.SetTxPower(" + level + "," + outputPin + ")");
       if (outputPin == 1) {
         if(level < 0) {
           level = 0;
@@ -127,15 +127,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
     public void EnableCrc() {
-      Console.WriteLine("LoraConnector.EnableCrc()");
       this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) | 0x04));
     }
     public void SetPrePaRamp() {
-      Console.WriteLine("LoraConnector.SetPreRamp()");
       this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
     }
     public void Receive(Byte size) {
-      Console.WriteLine("LoraConnector.Receive(" + size + ")");
       if (size > 0) {
         this.ImplicitHeaderMode();
         this.WriteRegister(Registers.PAYLOAD_LENGTH, (Byte)(size & 0xff));
@@ -145,19 +142,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.RX_CONTINOUS);
     }
     public void ExplicitHeaderMode() {
-      Console.WriteLine("LoraConnector.ExplictHeaderMode()");
       this._implictHeaderMode = false;
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) & 0xfe));
     }
 
     public void ImplicitHeaderMode() {
-      Console.WriteLine("LoraConnector.ImplictHeaderMode()");
       this._implictHeaderMode = true;
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) | 0x01));
     }
 
     private void OnDio0Rise() {
-      Console.WriteLine("LoraConnector.OnDio0Rise()");
       Byte irqFlags = this.ReadRegister(Registers.IRQ_FLAGS);
 
       // clear IRQ's
@@ -195,21 +189,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     #region Communication
     private Byte ReadRegister(Byte address) {
-      Console.WriteLine("LoraConnector.ReadRegister(" + address + ")");
       return this.SingleTransfer((Byte)(address & 0x7F), 0x00);
     }
     private Byte ReadRegister(Registers reg) {
       return ReadRegister((Byte)reg);
     }
     private void WriteRegister(Byte address, Byte value) {
-      Console.WriteLine("LoraConnector.WriteRegister(" + address + ","+value+")");
       this.SingleTransfer((Byte)(address | 0x80), value);
     }
     private void WriteRegister(Registers reg, Byte value) {
       this.WriteRegister((Byte)reg, value);
     }
     public Int16 Read() {
-      Console.WriteLine("LoraConnector.Read()");
       if (this.Available() == 0) {
         return -1;
       }
@@ -217,66 +208,53 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       return this.ReadRegister(Registers.FIFO);
     }
     public Byte Available() {
-      Console.WriteLine("LoraConnector.Available()");
       return (Byte)(this.ReadRegister(Registers.RX_NB_BYTES) - this._packetIndex);
     }
     public Double PacketSnr() {
-      Console.WriteLine("LoraConnector.PacketSnr()");
       return ((SByte)this.ReadRegister(Registers.PKT_SNR_VALUE)) * 0.25;
     }
     public Byte PacketRssi() {
-      Console.WriteLine("LoraConnector.PacketRssi()");
       return (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
     }
     public Byte Rssi() {
-      Console.WriteLine("LoraConnector.Rssi()");
       return (Byte)(this.ReadRegister(Registers.RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
     }
     #endregion
 
     #region Hardware IO
     private void Reset() {
-      Console.WriteLine("LoraConnector.Reset()");
-      Pi.Gpio.Pin00.Write(false);
+      this.RST.Write(false);
       System.Threading.Thread.Sleep(100);
-      Pi.Gpio.Pin00.Write(true);
+      this.RST.Write(true);
       System.Threading.Thread.Sleep(100);
     }
 
     private void SetupIO() {
-      Console.WriteLine("LoraConnector.SetupIO()");
       Pi.Spi.Channel0Frequency = SpiChannel.MinFrequency;
-      //ssPin = 6;
-      Pi.Gpio.Pin06.PinMode = GpioPinDriveMode.Output;
-      //RST = 0;
-      Pi.Gpio.Pin00.PinMode = GpioPinDriveMode.Output;
-      //dio0 = 7;
-      Pi.Gpio.Pin07.PinMode = GpioPinDriveMode.Input;
+      this.ssPin.PinMode = GpioPinDriveMode.Output;
+      this.dio0.PinMode = GpioPinDriveMode.Input;
+      this.RST.PinMode = GpioPinDriveMode.Output;
     }
 
     private Byte SingleTransfer(Byte address, Byte value) {
-      Console.WriteLine("LoraConnector.singleTransfer(" + address + ","+value+")");
       Selectreceiver();
-      Byte[] spibuf = Pi.Spi.Channel0.SendReceive(new Byte[] { address, 0x00 });
+      Byte[] spibuf = Pi.Spi.Channel0.SendReceive(new Byte[] { address, value });
       Unselectreceiver();
       return spibuf[1];
     }
 
     private void Selectreceiver() {
-      Console.WriteLine("LoraConnector.Selectreciever()");
-      Pi.Gpio.Pin06.Write(false);
+      this.ssPin.Write(false);
     }
 
     private void Unselectreceiver() {
-      Console.WriteLine("LoraConnector.Unselectreciever()");
-      Pi.Gpio.Pin06.Write(true);
+      this.ssPin.Write(true);
     }
 
     public void OnReceive() {
-      Console.WriteLine("LoraConnector.OnReceive()");
       if (this.Update != null) {
         this.WriteRegister(Registers.DIO_MAPPING_1, 0x00);
-        Pi.Gpio.Pin07.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.OnDio0Rise);
+        this.dio0.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.OnDio0Rise);
       }
     }
     #endregion
