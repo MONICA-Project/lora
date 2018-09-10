@@ -51,7 +51,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Devices\GpsInfo.cs" />
+    <Compile Include="Devices\LoraClient.cs" />
+    <Compile Include="Devices\WlanNetwork.cs" />
     <Compile Include="Events\DeviceUpdateEvent.cs" />
+    <Compile Include="Interfaces\AConnector.cs" />
     <Compile Include="lib\LoraConnector.cs" />
     <Compile Include="LoraController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -59,6 +63,19 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Librarys\litjson\litjson\litjson_4.7.1.csproj">
+      <Project>{91a14cd2-2940-4500-8193-56d37edddbaa}</Project>
+      <Name>litjson_4.7.1</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Utils\Bot-Utils\Bot-Utils.csproj">
+      <Project>{bb7bfcb5-3db0-49e1-802a-3ce3eecc59f9}</Project>
+      <Name>Bot-Utils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Utils\IoT\Interfaces\Iot-Interfaces.csproj">
+      <Project>{4daada29-c600-4cf3-8ad3-9c97c8d7f632}</Project>
+      <Name>Iot-Interfaces</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
