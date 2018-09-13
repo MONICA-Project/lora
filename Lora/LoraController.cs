@@ -53,29 +53,33 @@ namespace Fraunhofer.Fit.Iot.Lora {
       }
     }
 
-    private void ReceivePacket(Object sender, Events.LoraClientEvent e) {
-      Console.WriteLine(e.Text.Length);
+    private void ReceivePacket(Object sender, LoraClientEvent e) {
+      Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: " + e.Text.Length.ToString());
       if (e.Text.StartsWith("b") && e.Text.Length == 27) {
         Byte[] data = System.Text.Encoding.ASCII.GetBytes(e.Text);
-        Console.WriteLine("|" + BitConverter.ToString(data).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(data).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
         String deviceName = LoraClient.GetName(data);
         if (this.devices.ContainsKey(deviceName)) {
           this.devices[deviceName].SetUpdate(e, data);
         } else {
-          this.devices.Add(deviceName, new LoraClient(e, data));
+          this.devices.Add(deviceName, new LoraClient());
           this.devices[deviceName].Update += this.AllUpdate;
+          this.devices[deviceName].SetUpdate(e, data);
         }
 
       } else {
-        Console.WriteLine("|" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
         if (LoraClient.CheckPacket(e.Text)) {
           String deviceName = LoraClient.GetName(e.Text);
           if (this.devices.ContainsKey(deviceName)) {
             this.devices[deviceName].SetUpdate(e, e.Text);
           } else {
-            this.devices.Add(deviceName, new LoraClient(e, e.Text));
+            this.devices.Add(deviceName, new LoraClient());
             this.devices[deviceName].Update += this.AllUpdate;
+            this.devices[deviceName].SetUpdate(e, e.Text);
           }
+        } else {
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: Packet not Match!");
         }
       }
     }

@@ -43,7 +43,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
     public Boolean Fix { get; private set; }
 
     public override String ToString() {
-      return "Lat: " + this.Latitude + " Lon: " + this.Longitude + "\nTime: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
+      return "Lat: " + this.Latitude + " Lon: " + this.Longitude + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
     }
   }
 }

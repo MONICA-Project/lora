@@ -17,22 +17,9 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
     public String Name { get; private set; }
     public ReadOnlyDictionary<String, WlanNetwork> Wifi { get; private set; }
     public GpsInfo Gps { get; private set; }
-    public Int32 BatteryLevel { get; private set; }
+    public Double BatteryLevel { get; private set; }
 
-    public LoraClient(LoraClientEvent e) {
-      this.PacketRssi = e.Packetrssi;
-      this.Rssi = e.Rssi;
-      this.Snr = e.Snr;
-      this.Receivedtime = e.UpdateTime;
-    }
-
-    public LoraClient(LoraClientEvent e, String data) : this(e) {
-      this.Parse(data);
-    }
-
-    public LoraClient(LoraClientEvent e, Byte[] data) : this(e) {
-      this.Parse(data);
-    }
+    public LoraClient() { }
 
     private void Parse(Byte[] data) {
       if (data.Length == 28) {
@@ -77,7 +64,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
       }
       this.Wifi = new ReadOnlyDictionary<String, WlanNetwork>(wifis);
       String[] infos = texts[texts.Length - 1].Split(',');
-      if (infos.Length >= 5 && Int32.TryParse(infos[4], out Int32 batteryLevel)) {
+      if (infos.Length >= 5 && Double.TryParse(infos[4], out Double batteryLevel)) {
         this.BatteryLevel = batteryLevel;
       }
       this.Gps = new GpsInfo(texts[texts.Length - 1]);
@@ -85,12 +72,12 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
     }
 
     public override String ToString() {
-      String ret = this.Name + "\n" + "Packet: PRssi: "+this.PacketRssi+" Rssi: "+this.Rssi+" SNR: "+this.Snr+" Time: "+this.Receivedtime.ToString() + " Battery: " + this.BatteryLevel+"\n";
-      ret += "WLAN:\n";
+      String ret = this.Name + " -- " + "Packet: PRssi: "+this.PacketRssi+" Rssi: "+this.Rssi+" SNR: "+this.Snr+" Time: "+this.Receivedtime.ToString() + " Battery: " + this.BatteryLevel+" -- ";
+      /*ret += "WLAN:\n";
       foreach (KeyValuePair<String, WlanNetwork> item in this.Wifi) {
         ret += item.ToString() + "\n";
-      }
-      ret += "GPS:\n" + this.Gps.ToString();
+      }*/
+      ret += "GPS: " + this.Gps.ToString();
       return ret;
     }
 
@@ -133,7 +120,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
             return false;
           }
         }
-        if (!Regex.Match(m[4], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9]+").Success) {
+        if (!Regex.Match(m[4], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9].[0-9]{2}").Success) {
           return false;
         }
         return true;
@@ -144,7 +131,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
           //Console.WriteLine("Name Match Fail");
           return false;
         }
-        if (!Regex.Match(m[1], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9]+").Success) {
+        if (!Regex.Match(m[1], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9].[0-9]{2}").Success) {
           //Console.WriteLine("GPS Match Fail");
           return false;
         }
