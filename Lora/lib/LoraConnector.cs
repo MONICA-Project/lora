@@ -31,6 +31,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       FRF_LSB = 0x08,
       PA_CONFIG = 0x09,
       PRE_PA_RAMP = 0x0A,
+      OCP = 0x0B,
       LNA = 0x0C,
       FIFO_ADDR_PTR = 0x0D,
       FIFO_TX_BASE_ADDR = 0x0E,
@@ -52,10 +53,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       FREQ_ERROR_LSB = 0x2A,
       RSSI_WIDEBAND = 0x2C,
       DETECTION_OPTIMIZE = 0x31,
+      INVERTIQ = 0x33,
       DEDECTION_THRESHOLD = 0x37,
       SYNC_WORD = 0x39,
+      INVERTIQ2 = 0x3B,
       DIO_MAPPING_1 = 0x40,
-      VERSION = 0x42
+      VERSION = 0x42,
+      PA_DAC = 0x4D
     };
 
     enum Modes : Byte {
@@ -136,6 +140,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
 
     #region Packets, Read, Write
     public Boolean BeginPacket(Boolean implictHeader = false) {
+      if(IsTransmitting()) {
+        return false;
+      }
       this.Ilde();
       if (implictHeader) {
         this.ImplicitHeaderMode();
@@ -147,12 +154,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       return true;
     }
 
-    public Boolean EndPacket() {
+    public Boolean EndPacket(Boolean async = false) {
       this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.TX);
-      while ((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) == 0) {
-        System.Threading.Thread.Sleep(1);
+      if (async) {
+        System.Threading.Thread.Sleep(150);
+      } else {
+        while ((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) == 0) {
+          System.Threading.Thread.Sleep(1);
+        }
+        this.WriteRegister(Registers.IRQ_FLAGS, (Byte)Irq.TX_DONE_MASK);
       }
-      this.WriteRegister(Registers.IRQ_FLAGS, (Byte)Irq.TX_DONE_MASK);
       return true;
     }
 
@@ -359,6 +370,26 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     public void SetPrePaRamp() {
       this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
     }
+
+    public void EnableInvertIQ() {
+      this.WriteRegister(Registers.INVERTIQ, 0x66);
+      this.WriteRegister(Registers.INVERTIQ2, 0x19);
+    }
+
+    public void DisableInvertIQ() {
+      this.WriteRegister(Registers.INVERTIQ, 0x27);
+      this.WriteRegister(Registers.INVERTIQ2, 0x1D);
+    }
+
+    public void SetOCP(Byte mA) {
+      Byte opcTrim = 27;
+      if(mA <= 120) {
+        opcTrim = (Byte)((mA - 45) / 5);
+      } else if(mA <=240) {
+        opcTrim = (Byte)((mA + 30) / 10);
+      }
+      this.WriteRegister(Registers.OCP, (Byte)(0x20 | (0x1F & opcTrim)));
+    }
     #endregion
 
     #region Debug 
@@ -379,6 +410,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     #endregion
 
     #region Private Methods
+    private Boolean IsTransmitting() {
+      if((this.ReadRegister(Registers.OP_MODE) & (Byte)Modes.TX) == (Byte)Modes.TX) {
+        return true;
+      }
+      if((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) != 0) {
+        this.WriteRegister(Registers.IRQ_FLAGS, (Byte)Irq.TX_DONE_MASK);
+      }
+      return false;
+    }
+
     private void ExplicitHeaderMode() {
       this._implictHeaderMode = false;
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) & 0xfe));
@@ -426,13 +467,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       }
     }
 
-
-
     private void OnDio0Rise() {
       this.HandleOnDio0Rise();
     }
-
-
 
     private void SetLdoFlag() {
       Int64 symbolDuration = 1000 / (this.GetSignalBandwidth() / (1L << this.GetSpreadingFactor()));
@@ -465,10 +502,20 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
         }
         this.WriteRegister(Registers.PA_CONFIG, (Byte)(0x70 | level));
       } else {
-        if (level < 2) {
-          level = 2;
-        } else if (level > 17) {
-          level = 17;
+        if(level > 17) {
+          if(level > 20) {
+            level = 20;
+          }
+          level -= 3;
+          // High Power +20 dBm Operation (Semtech SX1276/77/78/79 5.4.3.)
+          WriteRegister(Registers.PA_DAC, 0x87);
+          this.SetOCP(140);
+        } else {
+          if(level < 2) {
+            level = 2;
+          }
+          //Default value PA_HF/LF or +17dBm
+          this.WriteRegister(Registers.PA_DAC, 0x84);
         }
         this.WriteRegister(Registers.PA_CONFIG, (Byte)((Byte)Pa.BOOST | (level - 2)));
       }

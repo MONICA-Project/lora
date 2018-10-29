@@ -51,11 +51,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Devices\GpsInfo.cs" />
-    <Compile Include="Devices\LoraClient.cs" />
-    <Compile Include="Devices\WlanNetwork.cs" />
-    <Compile Include="Events\DeviceUpdateEvent.cs" />
-    <Compile Include="Interfaces\AConnector.cs" />
+    <Compile Include="Events\TrackerUpdateEvent.cs" />
+    <Compile Include="Events\GpsUpdateEvent.cs" />
+    <Compile Include="Events\UpdateEventHelper.cs" />
+    <Compile Include="Events\StatusUpdateEvent.cs" />
+    <Compile Include="Events\LoraClientEvent.cs" />
+    <Compile Include="Trackers\GpsInfo.cs" />
+    <Compile Include="Trackers\Tracker.cs" />
+    <Compile Include="Events\DataUpdateEvent.cs" />
     <Compile Include="lib\LoraConnector.cs" />
     <Compile Include="LoraController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

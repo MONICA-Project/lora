@@ -6,17 +6,11 @@ using BlubbFish.Utils.IoT.Bots;
 using BlubbFish.Utils.IoT.Interfaces;
 using LitJson;
 
-namespace Fraunhofer.Fit.Iot.Lora.Interfaces {
-  public class AConnector : IMqtt {
-    #region IMqtt
+namespace Fraunhofer.Fit.Iot.Lora.Events {
+  public class UpdateEventHelper : EventArgs, IMqtt {
     public String ToJson() {
       return JsonMapper.ToJson(this.ToDictionary());
     }
-
-    public virtual String MqttTopic() {
-      return "Lora";
-    }
-    #endregion
 
     public virtual Dictionary<String, Object> ToDictionary() {
       Dictionary<String, Object> dictionary = new Dictionary<String, Object>();
@@ -40,6 +34,10 @@ namespace Fraunhofer.Fit.Iot.Lora.Interfaces {
         }
       }
       return dictionary;
+    }
+
+    public virtual String MqttTopic() {
+      return "";
     }
   }
 }

@@ -1,9 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using Fraunhofer.Fit.Iot.Lora.Interfaces;
 
-namespace Fraunhofer.Fit.Iot.Lora.Devices {
-  public class GpsInfo : AConnector {
+namespace Fraunhofer.Fit.Iot.Lora.Trackers {
+  public class GpsInfo {
+    public Double Latitude { get; private set; }
+    public Double Longitude { get; private set; }
+    public TimeSpan Time { get; private set; }
+    public Double Hdop { get; private set; }
+    public Boolean Fix { get; private set; }
+    public Double Height { get; private set; }
 
     public GpsInfo(String str) {
       String[] infos = str.Split(',');
@@ -21,6 +25,9 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
       if (Double.TryParse(infos[3], out Double hdop)) {
         this.Hdop = hdop;
       }
+      if(Double.TryParse(infos[4], out Double height)) {
+        this.Height = height;
+      }
       this.Fix = !(Math.Abs(this.Latitude) < 0.000001 && Math.Abs(this.Longitude) < 0.000001); //Check for 0 lat and long
 
     }
@@ -34,16 +41,6 @@ namespace Fraunhofer.Fit.Iot.Lora.Devices {
       }
       this.Hdop = hdop;
       this.Fix = fix;
-    }
-
-    public Double Latitude { get; private set; }
-    public Double Longitude { get; private set; }
-    public TimeSpan Time { get; private set; }
-    public Double Hdop { get; private set; }
-    public Boolean Fix { get; private set; }
-
-    public override String ToString() {
-      return "Lat: " + this.Latitude + " Lon: " + this.Longitude + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
     }
   }
 }

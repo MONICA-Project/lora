@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BlubbFish.Utils.IoT.Bots;
-using Fraunhofer.Fit.Iot.Lora.Devices;
+using Fraunhofer.Fit.Iot.Lora.Trackers;
 using Fraunhofer.Fit.Iot.Lora.Events;
 using Fraunhofer.Fit.Iot.Lora.lib;
 
@@ -14,20 +14,22 @@ namespace Fraunhofer.Fit.Iot.Lora {
     private LoraConnector loraconnector;
     private readonly Dictionary<String, String> settings;
 
-    public delegate void DataUpdate(Object sender, DeviceUpdateEvent e);
-    public event DataUpdate Update;
-    public Dictionary<String, LoraClient> devices = new Dictionary<String, LoraClient>();
-    public LoraController(Dictionary<String, String> settings) {
-      Console.WriteLine("LoraController.LoraController()");
+    public delegate void UpdateDataEvent(Object sender, DataUpdateEvent e);
+    public delegate void UpdateStatusEvent(Object sender, StatusUpdateEvent e);
+    public event UpdateDataEvent DataUpdate;
+    public event UpdateStatusEvent StatusUpdate;
+    public Dictionary<String, Tracker> trackers = new Dictionary<String, Tracker>();
+    public LoraController(Dictionary<String, String> settings, Boolean receive = true) {
+      Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.LoraController()");
       this.settings = settings;
       try {
-        this.CreateLoraController(true);
+        this.CreateLoraController(receive);
         this.loraconnector.Update += this.ReceivePacket;
         this.loraconnector.OnReceive();
       } catch { }
     }
 
-    private void CreateLoraController(Boolean rescieve = true) {
+    private void CreateLoraController(Boolean receive = true) {
       if(!this.settings.ContainsKey("frequency") || !this.settings.ContainsKey("spreadingfactor") | !this.settings.ContainsKey("signalbandwith") || !this.settings.ContainsKey("codingrate")) {
         Helper.WriteError("Not all Settings set!: [lora]\nfrequency=868100000\nspreadingfactor=8\nsignalbandwith=125000\ncodingrate=6 missing");
         return;
@@ -39,13 +41,13 @@ namespace Fraunhofer.Fit.Iot.Lora {
       this.loraconnector.SetCodingRate4(Byte.Parse(this.settings["codingrate"]));
       //this.loraconnector.EnableCrc();
       this.loraconnector.DisableCrc();
-      if (rescieve) {
+      if (receive) {
         this.loraconnector.Receive(0);
       } else {
         this.loraconnector.SetTxPower(17);
         while (true) {
           this.loraconnector.BeginPacket();
-          this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TESTTESTTESTTESTTESTTESTTESTAsdasdasdh ahsdk jahsdkdja shdas"));
+          this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
           this.loraconnector.EndPacket();
           Console.WriteLine("Send!");
           System.Threading.Thread.Sleep(1000);
@@ -55,37 +57,58 @@ namespace Fraunhofer.Fit.Iot.Lora {
 
     private void ReceivePacket(Object sender, LoraClientEvent e) {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: " + e.Text.Length.ToString());
+      String trackerName = "";
+      Byte[] binaryUpdate = { };
+      String textStatus = "";
+      String textUpdate = "";
       if (e.Text.StartsWith("b") && e.Text.Length == 27) {
-        Byte[] data = System.Text.Encoding.ASCII.GetBytes(e.Text);
-        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(data).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-        String deviceName = LoraClient.GetName(data);
-        if (this.devices.ContainsKey(deviceName)) {
-          this.devices[deviceName].SetUpdate(e, data);
-        } else {
-          this.devices.Add(deviceName, new LoraClient());
-          this.devices[deviceName].Update += this.AllUpdate;
-          this.devices[deviceName].SetUpdate(e, data);
-        }
-
-      } else {
+        //###### Binary Packet, starts with "b" #########
+        binaryUpdate = System.Text.Encoding.ASCII.GetBytes(e.Text);
+        trackerName = Tracker.GetName(binaryUpdate);
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(binaryUpdate).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+      } else if (e.Text.StartsWith("deb")) {
+        //###### Debug Packet, three lines #############
         Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-        if (LoraClient.CheckPacket(e.Text)) {
-          String deviceName = LoraClient.GetName(e.Text);
-          if (this.devices.ContainsKey(deviceName)) {
-            this.devices[deviceName].SetUpdate(e, e.Text);
-          } else {
-            this.devices.Add(deviceName, new LoraClient());
-            this.devices[deviceName].Update += this.AllUpdate;
-            this.devices[deviceName].SetUpdate(e, e.Text);
-          }
+        if (Tracker.CheckPacket(e.Text)) {
+          textStatus = e.Text;
+          trackerName = Tracker.GetName(textStatus, 1);
+        } else {
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: Debug-Packet not Match!");
+        }
+      } else {
+        //###### Normal Packet, two lines #############
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+        if (Tracker.CheckPacket(e.Text)) {
+          textUpdate = e.Text;
+          trackerName = Tracker.GetName(textUpdate, 0);
         } else {
           Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: Packet not Match!");
         }
       }
+      if (trackerName != "") {
+        if (!this.trackers.ContainsKey(trackerName)) {
+          this.trackers.Add(trackerName, new Tracker());
+          this.trackers[trackerName].DataUpdate += this.DataUpdates;
+          this.trackers[trackerName].StatusUpdate += this.StatusUpdates;
+        }
+        if(binaryUpdate.Length > 0) {
+          this.trackers[trackerName].SetUpdate(e, binaryUpdate);
+        }
+        if(textStatus != "") {
+          this.trackers[trackerName].SetStatus(e, textStatus);
+        }
+        if(textUpdate != "") {
+          this.trackers[trackerName].SetUpdate(e, textUpdate);
+        }
+      }
     }
 
-    private void AllUpdate(Object sender, DeviceUpdateEvent e) {
-      this.Update?.Invoke(sender, e);
+    private void StatusUpdates(Object sender, StatusUpdateEvent e) {
+      this.StatusUpdate?.Invoke(sender, e);
+    }
+
+    private void DataUpdates(Object sender, DataUpdateEvent e) {
+      this.DataUpdate?.Invoke(sender, e);
     }
 
     #region IDisposable Support
