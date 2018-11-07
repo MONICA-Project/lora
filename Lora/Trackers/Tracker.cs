@@ -151,7 +151,13 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     }
 
     public static String GetName(String message, Int32 index) {
-      return message.Split(new String[] { "\r\n" }, StringSplitOptions.None)[index].Trim();
+      if (message.Contains("\r\n")) {
+        return message.Split(new String[] { "\r\n" }, StringSplitOptions.None)[index].Trim();
+      } else if (message.Contains("\n")) {
+        return message.Split(new String[] { "\n" }, StringSplitOptions.None)[index].Trim();
+      } else {
+        return "";
+      }
     }
 
     public static String GetName(Byte[] data) {

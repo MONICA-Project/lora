@@ -66,6 +66,9 @@ namespace Fraunhofer.Fit.Iot.Lora {
         binaryUpdate = System.Text.Encoding.ASCII.GetBytes(e.Text);
         trackerName = Tracker.GetName(binaryUpdate);
         Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(binaryUpdate).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+      } else if (e.Text.Length == 256) {
+        binaryUpdate = System.Text.Encoding.ASCII.GetBytes(e.Text);
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(binaryUpdate).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
       } else if (e.Text.StartsWith("deb")) {
         //###### Debug Packet, three lines #############
         Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
