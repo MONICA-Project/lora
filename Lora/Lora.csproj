@@ -56,10 +56,12 @@
     <Compile Include="Events\UpdateEventHelper.cs" />
     <Compile Include="Events\StatusUpdateEvent.cs" />
     <Compile Include="Events\LoraClientEvent.cs" />
+    <Compile Include="lib\IC880ALora.cs" />
+    <Compile Include="lib\LoraConnector.cs" />
     <Compile Include="Trackers\GpsInfo.cs" />
     <Compile Include="Trackers\Tracker.cs" />
     <Compile Include="Events\DataUpdateEvent.cs" />
-    <Compile Include="lib\LoraConnector.cs" />
+    <Compile Include="lib\DraginoLora.cs" />
     <Compile Include="LoraController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -78,6 +80,10 @@
     <ProjectReference Include="..\..\Utils\IoT\Interfaces\Iot-Interfaces.csproj">
       <Project>{4daada29-c600-4cf3-8ad3-9c97c8d7f632}</Project>
       <Name>Iot-Interfaces</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Utils\Utils\Utils.csproj">
+      <Project>{fac8ce64-bf13-4ece-8097-aeb5dd060098}</Project>
+      <Name>Utils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

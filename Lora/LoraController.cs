@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using BlubbFish.Utils.IoT.Bots;
 using Fraunhofer.Fit.Iot.Lora.Trackers;
 using Fraunhofer.Fit.Iot.Lora.Events;
 using Fraunhofer.Fit.Iot.Lora.lib;
+using BlubbFish.Utils;
 
 // Hope RFM96
 // http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf
@@ -34,7 +34,7 @@ namespace Fraunhofer.Fit.Iot.Lora {
         Helper.WriteError("Not all Settings set!: [lora]\nfrequency=868100000\nspreadingfactor=8\nsignalbandwith=125000\ncodingrate=6 missing");
         return;
       }
-      this.loraconnector = new LoraConnector(Unosquare.RaspberryIO.Pi.Gpio.Pin06, Unosquare.RaspberryIO.Pi.Gpio.Pin07, Unosquare.RaspberryIO.Pi.Gpio.Pin00);
+      this.loraconnector = new DraginoLora(Unosquare.RaspberryIO.Pi.Gpio.Pin06, Unosquare.RaspberryIO.Pi.Gpio.Pin07, Unosquare.RaspberryIO.Pi.Gpio.Pin00);
       this.loraconnector.Begin(Int64.Parse(this.settings["frequency"])); //868125100
       this.loraconnector.SetSignalBandwith(Int64.Parse(this.settings["signalbandwith"])); //125000
       this.loraconnector.SetSpreadingFactor(Byte.Parse(this.settings["spreadingfactor"])); //8 - 11
