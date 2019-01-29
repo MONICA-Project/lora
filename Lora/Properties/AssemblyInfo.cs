@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Lora")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 10.10.2018")]
+[assembly: AssemblyCopyright("Copyright ©  2018 - 29.01.2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,8 +32,8 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.4.2")]
-[assembly: AssemblyFileVersion("1.4.2")]
+[assembly: AssemblyVersion("1.5.0")]
+[assembly: AssemblyFileVersion("1.5.0")]
 
 /*
  * 1.1.0 Now awaiing Battery as Double and fix the sending twise issue
@@ -41,5 +41,6 @@ using System.Runtime.InteropServices;
  * 1.3.0 Status event and fileds added and refactoring
  * 1.4.0 Implement Height in Lora
  * 1.4.1 Fixing parsing bug with linebreaks
- * 1.4.2 Adding Test for LoraBinary
+ * 1.4.2 Adding test for LoraBinary
+ * 1.5.0 Add support for IC880A board
  */

@@ -1,28 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using BlubbFish.Utils;
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
   public abstract class LoraConnector {
+    protected Dictionary<String, String> config;
+
     public delegate void DataUpdate(Object sender, LoraClientEvent e);
     public event DataUpdate Update;
 
-    public abstract void OnReceive();
-    public abstract Boolean Begin(Int64 freq);
-    public abstract void SetSignalBandwith(Int64 sbw);
-    public abstract void SetSpreadingFactor(Byte sf);
-    public abstract void SetCodingRate4(Byte denominator);
-    public abstract void DisableCrc();
-    public abstract void EnableCrc();
-    public abstract void Receive(Byte size);
-    public abstract void SetTxPower(Int32 level, Pa outputPin = Pa.OUTPUT_PA_BOOST_PIN);
-    public abstract Boolean BeginPacket(Boolean implictHeader = false);
-    public abstract Byte Write(Byte[] buffer);
-    public abstract Boolean EndPacket(Boolean async = false);
+    protected LoraConnector(Dictionary<String, String> settings) {
+      this.config = settings;
+    }
+
+    public static LoraConnector GetInstance(Dictionary<String, String> settings) {
+      if (settings.Count == 0) {
+        return null;
+      }
+      String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower();
+      Type t = null;
+      try {
+        t = Type.GetType(object_sensor, true);
+      } catch (TypeLoadException) {
+        Console.Error.WriteLine("Configuration: " + settings["type"] + " is not a LoraConnector");
+        return null;
+      } catch (System.IO.FileNotFoundException) {
+        Console.Error.WriteLine("Driver " + object_sensor + " could not load!");
+        return null;
+      }
+      return (LoraConnector)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
+    }
+
+    protected void RaiseUpdateEvent(LoraClientEvent data) {
+      this.Update?.Invoke(this, data);
+    }
+
+    protected Boolean HasAttachedUpdateEvent() {
+      if(this.Update != null) {
+        return true;
+      }
+      return false;
+    }
+
+    #region Constructor
+    public abstract Boolean Begin();
     public abstract void End();
     public abstract void Dispose();
+    public abstract Boolean StartRadio();
+    public abstract void ParseConfig();
+    #endregion
+
+    #region Packets, Read, Write
+    public abstract Boolean BeginPacket(Boolean implictHeader = false);
+    public abstract Boolean EndPacket(Boolean async = false);
+    public abstract Byte Write(Byte[] buffer);
+    public abstract void Receive(Byte size);
+    #endregion
+
+    #region Powserusage
+    public abstract void SetTxPower(Int32 level);
+    #endregion
+
+    #region Hardware IO
+    public abstract void AttachUpdateEvent();
+    #endregion
   }
 }

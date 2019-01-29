@@ -51,6 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Events\Ic800ALoraClientEvent.cs" />
     <Compile Include="Events\TrackerUpdateEvent.cs" />
     <Compile Include="Events\GpsUpdateEvent.cs" />
     <Compile Include="Events\UpdateEventHelper.cs" />

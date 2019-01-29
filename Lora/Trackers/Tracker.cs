@@ -9,19 +9,31 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     public event UpdateDataEvent DataUpdate;
     public event UpdateStatusEvent StatusUpdate;
 
+    public Int32 Bandwidth { get; private set; }
     public Double BatteryLevel { get; private set; }
+    public UInt16 CalculatedCRC { get; private set; }
+    public Byte CodingRate { get; private set; }
+    public String CRCStatus { get; private set; }
+    public UInt32 Frequency { get; private set; }
     public Int32 FrequencyOffset { get; private set; }
     public GpsInfo Gps { get; private set; }
     public String IpAddress { get; private set; }
+    public String Modulation { get; private set; }
     public String Name { get; private set; }
-    public Byte PacketRssi { get; private set; }
-    public DateTime Receivedtime { get; private set; }
-    public Byte Rssi { get; private set; }
+    public Double PacketRssi { get; private set; }
+    public Byte RecieverInterface { get; private set; }
+    public Byte RecieverRadio { get; private set; }
+    public DateTime ReceivedTime { get; private set; }
+    public Double Rssi { get; private set; }
     public Double Snr { get; private set; }
+    public Double SnrMax { get; private set; }
+    public Double SnrMin { get; private set; }
+    public Byte SpreadingFactor { get; private set; }
+    public UInt32 Time { get; private set; }
     public Int32 Version { get; private set; }
     public Boolean WifiActive { get; private set; }
     public String WifiSsid { get; private set; }
-
+    
     public Tracker() { }
 
     #region Private Parsers and Helpers
@@ -91,10 +103,25 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     }
 
     private void SetUpdate(LoraClientEvent e) {
+      if(e is Ic800ALoraClientEvent) {
+        Ic800ALoraClientEvent ic = e as Ic800ALoraClientEvent;
+        this.Bandwidth = ic.Bandwidth;
+        this.CalculatedCRC = ic.Calculatedcrc;
+        this.CodingRate = ic.CodingRate;
+        this.CRCStatus = ic.CrcStatus;
+        this.Frequency = ic.Frequency;
+        this.RecieverInterface = ic.Interface;
+        this.Modulation = ic.Modulation;
+        this.RecieverRadio = ic.Radio;
+        this.SnrMax = ic.SnrMax;
+        this.SnrMin = ic.SnrMin;
+        this.SpreadingFactor = ic.Spreadingfactor;
+        this.Time = ic.Time;
+      } 
       this.PacketRssi = e.Packetrssi;
       this.Rssi = e.Rssi;
       this.Snr = e.Snr;
-      this.Receivedtime = e.UpdateTime;
+      this.ReceivedTime = e.UpdateTime;
     }
     #endregion
 
