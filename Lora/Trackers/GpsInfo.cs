@@ -32,15 +32,16 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
 
     }
 
-    public GpsInfo(Single lat, Single lon, Byte hour, Byte minute, Byte second, Single hdop, Boolean fix) {
+    public GpsInfo(Single lat, Single lon, Single height, Single hdop, Byte hour, Byte minute, Byte second, Byte day, Byte month, UInt16 year) {
       this.Latitude = lat;
       this.Longitude = lon;
-      String d = "01.01.2000 " + hour.ToString() + ":" + minute.ToString() + ":" + second.ToString();
+      this.Height = height;
+      String d = day.ToString().PadLeft(2,'0')+"."+month.ToString().PadLeft(2, '0') + "."+year.ToString().PadLeft(2, '4') + " " + hour.ToString().PadLeft(2, '0') + ":" + minute.ToString().PadLeft(2, '0') + ":" + second.ToString().PadLeft(2, '0');
       if (DateTime.TryParse(d, out DateTime dv)) {
         this.Time = dv.TimeOfDay;
       }
       this.Hdop = hdop;
-      this.Fix = fix;
+      this.Fix = (lat != 0 && lon != 0);
     }
   }
 }

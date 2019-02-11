@@ -2138,7 +2138,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       this.Sx125xSetup(1, 1, this.radioEnabled[1], RadioType.SX1257, this.radioFrequency[1]);
 
       this.RegisterWrite(Registers.GPIO_MODE, 31); /* gives AGC control of GPIOs to enable Tx external digital filter */
-      this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 2); /* Set all GPIOs as output */
+      this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); /* Set all GPIOs as output */
 
       //TODO Lib part for LBT (Listen before Talk)
 
@@ -2449,11 +2449,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         Byte stat_fifo = recieveregister[3];
 
         Byte[] buff2 = this.RegisterReadArray(Registers.RX_DATA_BUF_DATA, (UInt16)(sz + 16));
-        Byte[] data = new Byte[sz];
+        p.payload = new Byte[sz];
         for (Byte i = 0; i < sz; i++) {
-          data[i] = buff2[i];
+          p.payload[i] = buff2[i];
         }
-        p.payload = Encoding.ASCII.GetString(data);
         //Console.WriteLine("Text: " + p.payload);
         p.@interface = buff2[sz + 0];
         if (p.@interface >= 10) {

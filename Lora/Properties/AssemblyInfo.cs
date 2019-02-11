@@ -32,8 +32,8 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.5.0")]
-[assembly: AssemblyFileVersion("1.5.0")]
+[assembly: AssemblyVersion("1.6.0")]
+[assembly: AssemblyFileVersion("1.6.0")]
 
 /*
  * 1.1.0 Now awaiing Battery as Double and fix the sending twise issue
@@ -43,4 +43,5 @@ using System.Runtime.InteropServices;
  * 1.4.1 Fixing parsing bug with linebreaks
  * 1.4.2 Adding test for LoraBinary
  * 1.5.0 Add support for IC880A board
+ * 1.6.0 Fixing binary data transmission
  */

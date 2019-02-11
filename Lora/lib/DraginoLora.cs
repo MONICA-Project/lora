@@ -140,14 +140,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     }
 
     public override void ParseConfig() {
-      try {
-        this.SetSignalBandwith(Int64.Parse(this.config["signalbandwith"]));
-        this.SetSpreadingFactor(Byte.Parse(this.config["spreadingfactor"]));
-        this.SetCodingRate4(Byte.Parse(this.config["codingrate"]));
-        this.DisableCrc();
-      } catch (Exception e) {
-        Helper.WriteError("Failed to ParseConfig! " + e.Message + "\n" + e.StackTrace);
+      if (!this.config.ContainsKey("frequency") || 
+        !this.config.ContainsKey("spreadingfactor") || 
+        !this.config.ContainsKey("signalbandwith") || 
+        !this.config.ContainsKey("codingrate")) {
+        throw new Exception("Fraunhofer.Fit.Iot.Lora.lib.Draginolora.ParseConfig(): Not all Settings set!: [lora]\ntype=Draginolora\nfrequency=868100000\nspreadingfactor=9\nsignalbandwith=125000\ncodingrate=5 missing");
       }
+      this.SetSignalBandwith(Int64.Parse(this.config["signalbandwith"]));
+      this.SetSpreadingFactor(Byte.Parse(this.config["spreadingfactor"]));
+      this.SetCodingRate4(Byte.Parse(this.config["codingrate"]));
+      this.DisableCrc();
     }
     #endregion
 
@@ -472,7 +474,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
           Double snr = this.PacketSnr();
           Byte prssi = this.PacketRssi();
           Byte rssi = this.Rssi();
-          this.RaiseUpdateEvent(new LoraClientEvent(packetLength, Encoding.ASCII.GetString(ms).Trim(), snr, prssi, rssi));
+          this.RaiseUpdateEvent(new LoraClientEvent(packetLength, ms, snr, prssi, rssi));
 
           // reset FIFO address
           this.WriteRegister(Registers.FIFO_ADDR_PTR, 0);

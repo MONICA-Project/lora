@@ -19,7 +19,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public SF spreadingfactor;
     public CR coderate;
     public UInt32 count_us;
-    public String payload;
+    public Byte[] payload;
     public override String ToString() {
       return "IC880A: " + this.modulation.ToString("g") + " " +
         "Size: " + this.size + " " +

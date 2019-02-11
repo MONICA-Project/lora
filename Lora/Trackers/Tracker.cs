@@ -38,17 +38,21 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
 
     #region Private Parsers and Helpers
     private void Parse(Byte[] data) {
-      if (data.Length == 28) {
+      if (data.Length == 21) {
         this.Name = GetName(data);
-        Single lat = BitConverter.ToSingle(this.From5to4(data, 9), 0);
-        Single lon = BitConverter.ToSingle(this.From5to4(data, 14), 0);
-        Byte hour = data[19];
-        Byte minute = data[20];
-        Byte second = data[21];
-        Single hdop = BitConverter.ToSingle(this.From5to4(data, 22), 0);
-        this.BatteryLevel = data[27];
-        Boolean fix = (lat != 0 && lon != 0);
-        this.Gps = new GpsInfo(lat, lon, hour, minute, second, hdop, fix);
+        Single lat = BitConverter.ToSingle(data, 3);
+        Single lon = BitConverter.ToSingle(data, 7);
+        Single hdop = ((Single)data[11]) / 10;
+        Single height = ((Single)BitConverter.ToUInt16(data, 12)) / 10;
+        Byte hour = data[14];
+        Byte minute = data[15];
+        Byte second = data[16];
+        Byte day = data[17];
+        Byte month = data[18];
+        UInt16 year = (UInt16)(data[19] + 2000);
+        this.BatteryLevel = (((Single)data[20]) + 230) / 100;
+        //Console.WriteLine("lat: " + lat + " lon: " + lon + " hdop: " + hdop + " heigt: " + height + " hh:mm:ss: " + hour + ":" + minute + ":" + second + " DD.MM.YY: " + day + "." + month + "." + year + " bat: " + this.BatteryLevel);
+        this.Gps = new GpsInfo(lat, lon, height, hdop, hour, minute, second, day, month, year);
         this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
       }
     }
@@ -188,12 +192,16 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     }
 
     public static String GetName(Byte[] data) {
-      if(data.Length >= 9) {
-        Byte[] ret = new Byte[8];
-        for (Int32 i = 0; i < 8; i++) {
+      if(data.Length >= 3) {
+        Byte[] ret = new Byte[2];
+        for (Int32 i = 0; i < 2; i++) {
           ret[i] = data[i + 1];
         }
-        return System.Text.Encoding.ASCII.GetString(ret).Trim();
+        if (ret[1] == 0) {
+          return System.Text.Encoding.ASCII.GetString(new Byte[] { ret[0] }).Trim();
+        } else {
+          return System.Text.Encoding.ASCII.GetString(ret).Trim();
+        }
       }
       return "";
     }

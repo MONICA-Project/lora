@@ -19,35 +19,27 @@ namespace Fraunhofer.Fit.Iot.Lora {
     public LoraController(Dictionary<String, String> settings, Boolean receive = true) {
       this.settings = settings;
       try {
-        this.CreateLoraController(receive);
+        this.loraconnector = LoraConnector.GetInstance(this.settings);
+        this.loraconnector.Begin();
+        this.loraconnector.ParseConfig();
+        if (receive) {
+          this.loraconnector.Receive(0);
+        } else {
+          this.loraconnector.SetTxPower(17);
+          while (true) {
+            this.loraconnector.BeginPacket();
+            this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
+            this.loraconnector.EndPacket();
+            Console.WriteLine("Send!");
+            System.Threading.Thread.Sleep(1000);
+          }
+        }
         this.loraconnector.Update += this.ReceivePacket;
         this.loraconnector.StartRadio();
         this.loraconnector.AttachUpdateEvent();
       } catch(Exception e) {
         Helper.WriteError("Error while Loading Fraunhofer.Fit.Iot.Lora.LoraController.LoraController: " + e.Message + "\n\n" + e.StackTrace);
         throw;
-      }
-    }
-
-    private void CreateLoraController(Boolean receive = true) {
-      if((!this.settings.ContainsKey("frequency") || !this.settings.ContainsKey("spreadingfactor") || !this.settings.ContainsKey("signalbandwith") || !this.settings.ContainsKey("codingrate")) && this.settings.ContainsKey("type") && this.settings["type"].ToUpperLower() == "Draginolora") {
-        Helper.WriteError("Not all Settings set!: [lora]\nfrequency=868100000\nspreadingfactor=8\nsignalbandwith=125000\ncodingrate=6 missing");
-        return;
-      }
-      this.loraconnector = LoraConnector.GetInstance(this.settings);
-      this.loraconnector.Begin();
-      this.loraconnector.ParseConfig();
-      if (receive) {
-        this.loraconnector.Receive(0);
-      } else {
-        this.loraconnector.SetTxPower(17);
-        while (true) {
-          this.loraconnector.BeginPacket();
-          this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
-          this.loraconnector.EndPacket();
-          Console.WriteLine("Send!");
-          System.Threading.Thread.Sleep(1000);
-        }
       }
     }
 
@@ -58,28 +50,30 @@ namespace Fraunhofer.Fit.Iot.Lora {
         Byte[] binaryUpdate = { };
         String textStatus = "";
         String textUpdate = "";
-        if (e.Text.StartsWith("b") && e.Text.Length == 27) {
+        if (e.Text.Length == 21 && e.Text[0] == 'b') {
           //###### Binary Packet, starts with "b" #########
-          binaryUpdate = System.Text.Encoding.ASCII.GetBytes(e.Text);
+          binaryUpdate = e.Text;
           trackerName = Tracker.GetName(binaryUpdate);
           Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(binaryUpdate).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-        } else if (e.Text.Length == 256) {
+        } /*else if (e.Text.Length == 256) {
           binaryUpdate = System.Text.Encoding.ASCII.GetBytes(e.Text);
           Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + BitConverter.ToString(binaryUpdate).Replace("-", " ") + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-        } else if (e.Text.StartsWith("deb")) {
+        }*/ else if (e.Text.Length > 3 && e.Text[0] == 'd' && e.Text[1] == 'e' && e.Text[2] == 'b') {
           //###### Debug Packet, three lines #############
-          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-          if (Tracker.CheckPacket(e.Text)) {
-            textStatus = e.Text;
+          String text = System.Text.Encoding.ASCII.GetString(e.Text).Trim();
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+          if (Tracker.CheckPacket(text)) {
+            textStatus = text;
             trackerName = Tracker.GetName(textStatus, 1);
           } else {
             Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: Debug-Packet not Match!");
           }
         } else {
           //###### Normal Packet, two lines #############
-          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + e.Text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
-          if (Tracker.CheckPacket(e.Text)) {
-            textUpdate = e.Text;
+          String text = System.Text.Encoding.ASCII.GetString(e.Text).Trim();
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: |" + text + "| PRSSI: " + e.Packetrssi + " RSSI:" + e.Rssi + " SNR:" + e.Snr);
+          if (Tracker.CheckPacket(text)) {
+            textUpdate = text;
             trackerName = Tracker.GetName(textUpdate, 0);
           } else {
             Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: Packet not Match!");
@@ -116,7 +110,7 @@ namespace Fraunhofer.Fit.Iot.Lora {
     private Boolean disposedValue = false;
 
     protected virtual void Dispose(Boolean disposing) {
-      Console.WriteLine("LoraController.Dispose(" + disposing + ")");
+      Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.Dispose(" + disposing + ")");
       if (!this.disposedValue) {
         if (disposing) {
           if (this.loraconnector != null) {
