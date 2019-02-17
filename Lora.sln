@@ -15,6 +15,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "..\Utils\Utils\Uti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils-IoT", "..\Utils\Utils-IoT\Utils-IoT\Utils-IoT.csproj", "{B870E4D5-6806-4A0B-B233-8907EEDC5AFC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unosquare.Swan.Lite", "..\Librarys\RaspberryIO\Unosquare.Swan.Lite\Unosquare.Swan.Lite.csproj", "{AB015683-62E5-47F1-861F-6D037F9C6433}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unosquare.Swan", "..\Librarys\RaspberryIO\Unosquare.Swan\Unosquare.Swan.csproj", "{2EA5E3E4-F8C8-4742-8C78-4B070AFCFB73}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unosquare.RaspberryIO", "..\Librarys\RaspberryIO\Unosquare.RaspberryIO\Unosquare.RaspberryIO.csproj", "{8C5D4DE9-377F-4EC8-873D-6EEF15F43516}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Posix", "..\Librarys\Mono.Posix\Mono.Posix\Mono.Posix.csproj", "{E2CA132E-E85C-40AD-BE94-B138AA68772B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +53,22 @@ Global
 		{B870E4D5-6806-4A0B-B233-8907EEDC5AFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B870E4D5-6806-4A0B-B233-8907EEDC5AFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B870E4D5-6806-4A0B-B233-8907EEDC5AFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB015683-62E5-47F1-861F-6D037F9C6433}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB015683-62E5-47F1-861F-6D037F9C6433}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB015683-62E5-47F1-861F-6D037F9C6433}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB015683-62E5-47F1-861F-6D037F9C6433}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2EA5E3E4-F8C8-4742-8C78-4B070AFCFB73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2EA5E3E4-F8C8-4742-8C78-4B070AFCFB73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2EA5E3E4-F8C8-4742-8C78-4B070AFCFB73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2EA5E3E4-F8C8-4742-8C78-4B070AFCFB73}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C5D4DE9-377F-4EC8-873D-6EEF15F43516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C5D4DE9-377F-4EC8-873D-6EEF15F43516}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C5D4DE9-377F-4EC8-873D-6EEF15F43516}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C5D4DE9-377F-4EC8-873D-6EEF15F43516}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2CA132E-E85C-40AD-BE94-B138AA68772B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2CA132E-E85C-40AD-BE94-B138AA68772B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2CA132E-E85C-40AD-BE94-B138AA68772B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2CA132E-E85C-40AD-BE94-B138AA68772B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

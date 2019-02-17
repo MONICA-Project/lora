@@ -40,15 +40,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="Unosquare.RaspberryIO, Version=0.14.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Unosquare.Raspberry.IO.0.14.0\lib\net452\Unosquare.RaspberryIO.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.Swan, Version=0.28.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Unosquare.Swan.0.28.1\lib\net452\Unosquare.Swan.dll</HintPath>
-    </Reference>
-    <Reference Include="Unosquare.Swan.Lite, Version=0.28.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Unosquare.Swan.Lite.0.28.0\lib\net452\Unosquare.Swan.Lite.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\Ic800ALoraClientEvent.cs" />
@@ -67,12 +58,21 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\Librarys\litjson\litjson\litjson_4.7.1.csproj">
       <Project>{91a14cd2-2940-4500-8193-56d37edddbaa}</Project>
       <Name>litjson_4.7.1</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.RaspberryIO\Unosquare.RaspberryIO.csproj">
+      <Project>{8c5d4de9-377f-4ec8-873d-6eef15f43516}</Project>
+      <Name>Unosquare.RaspberryIO</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.Swan.Lite\Unosquare.Swan.Lite.csproj">
+      <Project>{ab015683-62e5-47f1-861f-6d037f9c6433}</Project>
+      <Name>Unosquare.Swan.Lite</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.Swan\Unosquare.Swan.csproj">
+      <Project>{2ea5e3e4-f8c8-4742-8c78-4b070afcfb73}</Project>
+      <Name>Unosquare.Swan</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Utils\Bot-Utils\Bot-Utils\Bot-Utils.csproj">
       <Project>{bb7bfcb5-3db0-49e1-802a-3ce3eecc59f9}</Project>
