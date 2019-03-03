@@ -8,7 +8,9 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public Double Height { get; private set; }
     public Double Latitude { get; private set; }
     public Double Longitude { get; private set; }
-    public TimeSpan Time { get; private set; }
+    public Double LastLatitude { get; private set; }
+    public Double LastLongitude { get; private set; }
+    public DateTime Time { get; private set; }
 
     public GpsUpdateEvent(GpsInfo gps) {
       this.Fix = gps.Fix;
@@ -17,10 +19,12 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.Latitude = gps.Latitude;
       this.Longitude = gps.Longitude;
       this.Time = gps.Time;
+      this.LastLatitude = gps.LastLatitude;
+      this.LastLongitude = gps.LastLongitude;
     }
 
     public override String ToString() {
-      return "Lat: " + this.Latitude + " Lon: " + this.Longitude + " Height: " + this.Height + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
+      return "Lat: " + this.Latitude + " [" + this.LastLatitude + "] Lon: " + this.Longitude + " [" + this.LastLongitude + "] Height: " + this.Height + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
     }
   }
 }

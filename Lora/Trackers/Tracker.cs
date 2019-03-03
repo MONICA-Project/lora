@@ -4,9 +4,16 @@ using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.Trackers {
   public class Tracker {
+    private enum ParseType {
+      Update,
+      Panic
+    }
+
     public delegate void UpdateDataEvent(Object sender, DataUpdateEvent e);
+    public delegate void UpdatePanicEvent(Object sender, PanicUpdateEvent e);
     public delegate void UpdateStatusEvent(Object sender, StatusUpdateEvent e);
     public event UpdateDataEvent DataUpdate;
+    public event UpdatePanicEvent PanicUpdate;
     public event UpdateStatusEvent StatusUpdate;
 
     public Int32 Bandwidth { get; private set; }
@@ -14,6 +21,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     public UInt16 CalculatedCRC { get; private set; }
     public Byte CodingRate { get; private set; }
     public String CRCStatus { get; private set; }
+    public Status DeviceStatus { get; private set; }
     public UInt32 Frequency { get; private set; }
     public Int32 FrequencyOffset { get; private set; }
     public GpsInfo Gps { get; private set; }
@@ -33,11 +41,20 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     public Int32 Version { get; private set; }
     public Boolean WifiActive { get; private set; }
     public String WifiSsid { get; private set; }
+
+    public enum Status {
+      Unknown,
+      Startup,
+      Powersave,
+      Shutdown
+    }
     
-    public Tracker() { }
+    public Tracker() {
+      this.Gps = new GpsInfo();
+    }
 
     #region Private Parsers and Helpers
-    private void Parse(Byte[] data) {
+    private void Parse(Byte[] data, ParseType dataType) {
       if (data.Length == 21) {
         this.Name = GetName(data);
         Single lat = BitConverter.ToSingle(data, 3);
@@ -51,9 +68,13 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         Byte month = data[18];
         UInt16 year = (UInt16)(data[19] + 2000);
         this.BatteryLevel = (((Single)data[20]) + 230) / 100;
+        this.Gps.SetUpdate(lat, lon, height, hdop, hour, minute, second, day, month, year);
         //Console.WriteLine("lat: " + lat + " lon: " + lon + " hdop: " + hdop + " heigt: " + height + " hh:mm:ss: " + hour + ":" + minute + ":" + second + " DD.MM.YY: " + day + "." + month + "." + year + " bat: " + this.BatteryLevel);
-        this.Gps = new GpsInfo(lat, lon, height, hdop, hour, minute, second, day, month, year);
-        this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
+        if (dataType == ParseType.Update) {
+          this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
+        } else if(dataType == ParseType.Panic) {
+          this.PanicUpdate?.Invoke(this, new PanicUpdateEvent(this));
+        }
       }
     }
 
@@ -64,7 +85,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       if (infos.Length >= 6 && Double.TryParse(infos[5], out Double batteryLevel)) {
         this.BatteryLevel = batteryLevel;
       }
-      this.Gps = new GpsInfo(texts[1]);
+      this.Gps.SetUpdate(texts[1]);
       this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
     }
 
@@ -75,7 +96,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       }
       this.Name = GetName(text, 1);
       String[] infos = texts[2].Split(',');
-      if(infos.Length != 6) {
+      if(infos.Length != 7) {
         return;
       }
       if (Int32.TryParse(infos[0], out Int32 version)) {
@@ -90,20 +111,16 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       if (Int32.TryParse(infos[5], out Int32 freqOffset)) {
         this.FrequencyOffset = freqOffset;
       }
-      this.StatusUpdate?.Invoke(this, new StatusUpdateEvent(this));
-    }
-
-    private Byte[] From5to4(Byte[] data, Int32 start) {
-      if (data.Length < start + 6) {
-        return new Byte[] { 0, 0, 0, 0 };
+      if(Int32.TryParse(infos[6], out Int32 deviceStatus)) {
+        if(deviceStatus == 0) {
+          this.DeviceStatus = Status.Shutdown;
+        } else if(deviceStatus == 1) {
+          this.DeviceStatus = Status.Startup;
+        } else if(deviceStatus == 2) {
+          this.DeviceStatus = Status.Powersave;
+        }
       }
-      UInt64 t = 0;
-      t = data[start + 4];
-      t += ((UInt64)data[start + 3] << 7);
-      t += ((UInt64)data[start + 2] << 14);
-      t += ((UInt64)data[start + 1] << 21);
-      t += ((UInt64)data[start + 0] << 28);
-      return BitConverter.GetBytes(t);
+      this.StatusUpdate?.Invoke(this, new StatusUpdateEvent(this));
     }
 
     private void SetUpdate(LoraClientEvent e) {
@@ -137,7 +154,11 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
 
     public void SetUpdate(LoraClientEvent e, Byte[] data) {
       this.SetUpdate(e);
-      this.Parse(data);
+      this.Parse(data, ParseType.Update);
+    }
+    public void SetPanics(LoraClientEvent e, Byte[] data) {
+      this.SetUpdate(e);
+      this.Parse(data, ParseType.Panic);
     }
 
     public void SetStatus(LoraClientEvent e, String textStatus) {
@@ -172,8 +193,8 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         if (m[1] == "") { //Name should not be empty
           return false;
         }
-        //version,ip,ssid,wififlag,battery,offset
-        if (!Regex.Match(m[2], "^[0-9]+,[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3},[^,]+,[tf],[0-9].[0-9]{2},(-[0-9]+|[0-9]+)").Success) {
+        //version,ip,ssid,wififlag,battery,offset,statusmode
+        if (!Regex.Match(m[2], "^[0-9]+,[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3},[^,]+,[tf],[0-9].[0-9]{2},(-[0-9]+|[0-9]+),[0-9]").Success) {
           return false;
         }
         return true;

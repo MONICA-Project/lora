@@ -29,7 +29,6 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.Receivedtime = tracker.ReceivedTime;
       this.Name = tracker.Name;
       this.BatteryLevel = tracker.BatteryLevel;
-
       this.Recieverradio = tracker.RecieverRadio;
       this.Recieverinterface = tracker.RecieverInterface;
       this.Frequency = tracker.Frequency;
