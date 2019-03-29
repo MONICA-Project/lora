@@ -69,7 +69,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.Spreadingfactor = this.ParseSpreadingFactor(p.spreadingfactor);
       this.Text = p.payload;
       this.Time = p.count_us;
-      this.UpdateTime = DateTime.Now;
+      this.UpdateTime = DateTime.UtcNow;
     }
 
     private Byte ParseSpreadingFactor(SF spreadingfactor) {

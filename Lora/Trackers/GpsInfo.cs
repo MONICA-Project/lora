@@ -6,6 +6,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     public Double LastLatitude { get; private set; }
     public Double Longitude { get; private set; }
     public Double LastLongitude { get; private set; }
+	  public DateTime LastGPSPos { get; private set; }
     public DateTime Time { get; private set; }
     public Double Hdop { get; private set; }
     public Boolean Fix { get; private set; }
@@ -31,7 +32,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       if (Double.TryParse(infos[1], out Double laengengrad)) {
         this.Longitude = laengengrad;
       }
-      String d = DateTime.Now.Day + "." + DateTime.Now.Month + "." + DateTime.Now.Year + " " + infos[2][0] + infos[2][1] + ":" + infos[2][2] + infos[2][3] + ":" + infos[2][4] + infos[2][5];
+      String d = DateTime.UtcNow.Day + "." + DateTime.UtcNow.Month + "." + DateTime.UtcNow.Year + " " + infos[2][0] + infos[2][1] + ":" + infos[2][2] + infos[2][3] + ":" + infos[2][4] + infos[2][5];
       if (DateTime.TryParse(d, out DateTime dv)) {
         this.Time = dv;
       }
@@ -45,6 +46,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       if(this.Fix) {
         this.LastLongitude = this.Longitude;
         this.LastLatitude = this.Latitude;
+        this.LastGPSPos = DateTime.UtcNow;
       }
     }
 
@@ -52,7 +54,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       this.Latitude = lat;
       this.Longitude = lon;
       this.Height = height;
-      String d = day.ToString().PadLeft(2,'0')+"."+month.ToString().PadLeft(2, '0') + "."+year.ToString().PadLeft(2, '4') + " " + hour.ToString().PadLeft(2, '0') + ":" + minute.ToString().PadLeft(2, '0') + ":" + second.ToString().PadLeft(2, '0');
+      String d = day.ToString().PadLeft(2,'0')+"."+month.ToString().PadLeft(2, '0') + "."+year.ToString().PadLeft(4, '0') + " " + hour.ToString().PadLeft(2, '0') + ":" + minute.ToString().PadLeft(2, '0') + ":" + second.ToString().PadLeft(2, '0');
       if (DateTime.TryParse(d, out DateTime dv)) {
         this.Time = dv;
       }
@@ -61,6 +63,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       if (this.Fix) {
         this.LastLongitude = this.Longitude;
         this.LastLatitude = this.Latitude;
+        this.LastGPSPos = DateTime.UtcNow;
       }
     }
   }

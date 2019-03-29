@@ -15,7 +15,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.Snr = Snr;
       this.Packetrssi = PacketRssi;
       this.Rssi = Rssi;
-      this.UpdateTime = DateTime.Now;
+      this.UpdateTime = DateTime.UtcNow;
     }
     public LoraClientEvent() {
 

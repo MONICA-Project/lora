@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // Allgemeine Informationen über eine Assembly werden über die folgenden
@@ -10,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Lora")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 03.03.2019")]
+[assembly: AssemblyCopyright("Copyright ©  2018 - 29.03.2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,8 +31,8 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.7.0")]
-[assembly: AssemblyFileVersion("1.7.0")]
+[assembly: AssemblyVersion("1.8.0")]
+[assembly: AssemblyFileVersion("1.8.0")]
 
 /*
  * 1.1.0 Now awaiing Battery as Double and fix the sending twise issue
@@ -46,4 +45,5 @@ using System.Runtime.InteropServices;
  * 1.6.0 Fixing binary data transmission
  * 1.6.1 Update to local librarys
  * 1.7.0 Add Parsing for new Statusformat and Panic Packet
+ * 1.8.0 Add field that indicates when the last gps position was recieved, change all times to UTC
  */
