@@ -48,10 +48,8 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
       Powersave,
       Shutdown
     }
-    
-    public Tracker() {
-      this.Gps = new GpsInfo();
-    }
+
+    public Tracker() => this.Gps = new GpsInfo();
 
     #region Private Parsers and Helpers
     private void Parse(Byte[] data, ParseType dataType) {

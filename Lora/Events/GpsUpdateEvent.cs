@@ -25,8 +25,6 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.LastGPSPos = gps.LastGPSPos;
     }
 
-    public override String ToString() {
-      return "Lat: " + this.Latitude + " [" + this.LastLatitude + "] Lon: " + this.Longitude + " [" + this.LastLongitude + "] Height: " + this.Height + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
-    }
+    public override String ToString() => "Lat: " + this.Latitude + " [" + this.LastLatitude + "] Lon: " + this.Longitude + " [" + this.LastLongitude + "] Height: " + this.Height + " -- Time: " + this.Time + " HDOP: " + this.Hdop + " Fix: " + this.Fix;
   }
 }

@@ -21,6 +21,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public Double Snrmax { get; private set; }
     public Double Snrmin { get; private set; }
     public UInt32 Time { get; private set; }
+    public String Host => Environment.MachineName;
 
     public TrackerUpdateEvent(Tracker tracker) {
       this.PacketRssi = tracker.PacketRssi;
@@ -42,14 +43,10 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.Time = tracker.Time;
     }
 
-    public override String MqttTopic() {
-      return base.MqttTopic() + this.Name;
-    }
+    public override String MqttTopic() => base.MqttTopic() + this.Name;
 
-    public override String ToString() {
-      return this.Name + " -- " + "Packet: PRssi: " + this.PacketRssi + " Rssi: " + this.Rssi + " SNR: (" + this.Snr + "/" + this.Snrmin + "/" + this.Snrmax + ") Time: " + this.Receivedtime.ToString() +
+    public override String ToString() => this.Name + " -- " + "Packet: PRssi: " + this.PacketRssi + " Rssi: " + this.Rssi + " SNR: (" + this.Snr + "/" + this.Snrmin + "/" + this.Snrmax + ") Time: " + this.Receivedtime.ToString() +
         " Battery: " + this.BatteryLevel + " Radio: " + this.Recieverradio + " Interface: " + this.Recieverinterface + " Freq: " + this.Frequency + " BW: " + this.Bandwidth +
         " CR: " + this.Codingrate + " SF: " + this.Spreadingfactor + " CRC: " + this.Crcstatus + "(0x" + this.Calculatedcrc.ToString("X4") + ") Time: " + this.Time;
-    }
   }
 }

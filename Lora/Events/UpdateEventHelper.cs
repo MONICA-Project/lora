@@ -8,9 +8,7 @@ using LitJson;
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {
   public class UpdateEventHelper : EventArgs, IMqtt {
-    public String ToJson() {
-      return JsonMapper.ToJson(this.ToDictionary());
-    }
+    public String ToJson() => JsonMapper.ToJson(this.ToDictionary());
 
     public virtual Dictionary<String, Object> ToDictionary() {
       Dictionary<String, Object> dictionary = new Dictionary<String, Object>();
@@ -36,8 +34,6 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       return dictionary;
     }
 
-    public virtual String MqttTopic() {
-      return "";
-    }
+    public virtual String MqttTopic() => "";
   }
 }

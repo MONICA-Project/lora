@@ -6,7 +6,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
     public Double LastLatitude { get; private set; }
     public Double Longitude { get; private set; }
     public Double LastLongitude { get; private set; }
-	  public DateTime LastGPSPos { get; private set; }
+    public DateTime LastGPSPos { get; private set; }
     public DateTime Time { get; private set; }
     public Double Hdop { get; private set; }
     public Boolean Fix { get; private set; }

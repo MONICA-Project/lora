@@ -20,12 +20,8 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.DeviceStatus = tracker.DeviceStatus.ToString();
     }
 
-    public override String MqttTopic() {
-      return "status/" + base.MqttTopic();
-    }
+    public override String MqttTopic() => "status/" + base.MqttTopic();
 
-    public override String ToString() {
-      return base.ToString() + " -- " + "Version: " + this.Version + " Ip-Address:" + this.IpAddress + " Wifi-SSID: " + this.WifiSsid + " Wifi-Active: " + this.WifiActive + " Freq-Offset: " + this.FrequencyOffset + " Status:" + this.DeviceStatus;
-    }
+    public override String ToString() => base.ToString() + " -- " + "Version: " + this.Version + " Ip-Address:" + this.IpAddress + " Wifi-SSID: " + this.WifiSsid + " Wifi-Active: " + this.WifiActive + " Freq-Offset: " + this.FrequencyOffset + " Status:" + this.DeviceStatus;
   }
 }
