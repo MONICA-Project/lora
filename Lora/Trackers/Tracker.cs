@@ -68,11 +68,10 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         this.BatteryLevel = (((Single)data[20]) + 230) / 100;
         this.Gps.SetUpdate(lat, lon, height, hdop, hour, minute, second, day, month, year);
         //Console.WriteLine("lat: " + lat + " lon: " + lon + " hdop: " + hdop + " heigt: " + height + " hh:mm:ss: " + hour + ":" + minute + ":" + second + " DD.MM.YY: " + day + "." + month + "." + year + " bat: " + this.BatteryLevel);
-        if (dataType == ParseType.Update) {
-          this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
-        } else if(dataType == ParseType.Panic) {
+        if (dataType == ParseType.Panic) {
           this.PanicUpdate?.Invoke(this, new PanicUpdateEvent(this));
         }
+        this.DataUpdate?.Invoke(this, new DataUpdateEvent(this));
       }
     }
 

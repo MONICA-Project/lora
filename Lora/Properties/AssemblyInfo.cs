@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Lora")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 14.04.2019")]
+[assembly: AssemblyCopyright("Copyright ©  2018 - 22.04.2019")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,8 +31,8 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.8.1")]
-[assembly: AssemblyFileVersion("1.8.1")]
+[assembly: AssemblyVersion("1.8.2")]
+[assembly: AssemblyFileVersion("1.8.2")]
 
 /*
  * 1.1.0 Now awaiing Battery as Double and fix the sending twise issue
@@ -47,4 +47,5 @@ using System.Runtime.InteropServices;
  * 1.7.0 Add Parsing for new Statusformat and Panic Packet
  * 1.8.0 Add field that indicates when the last gps position was recieved, change all times to UTC
  * 1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
+ * 1.8.2 Bugfix, create also an event for sending normal loradata when update panic
  */
