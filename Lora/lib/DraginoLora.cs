@@ -135,9 +135,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       }
     }
 
-    public override Boolean StartRadio() {
-      return true;
-    }
+    public override Boolean StartRadio() => true;
 
     public override void ParseConfig() {
       if (!this.config.ContainsKey("frequency") || 
@@ -221,9 +219,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       return size;
     }
 
-    public Byte Available() {
-      return (Byte)(this.ReadRegister(Registers.RX_NB_BYTES) - this._packetIndex);
-    }
+    public Byte Available() => (Byte)(this.ReadRegister(Registers.RX_NB_BYTES) - this._packetIndex);
 
     public Int16 Read() {
       if (this.Available() == 0) {
@@ -258,31 +254,19 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.WriteRegister(Registers.PREAMBLE_LSB, (Byte)(length >> 0));
     }
 
-    public void SetSyncWord(Byte sw) {
-      this.WriteRegister(Registers.SYNC_WORD, sw);
-    }
+    public void SetSyncWord(Byte sw) => this.WriteRegister(Registers.SYNC_WORD, sw);
 
-    public void EnableCrc() {
-      this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) | 0x04));
-    }
+    public void EnableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) | 0x04));
 
-    public void DisableCrc() {
-      this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) & 0xfb));
-    }
+    public void DisableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) & 0xfb));
     #endregion
 
     #region RadioSettings
-    public Byte Rssi() {
-      return (Byte)(this.ReadRegister(Registers.RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
-    }
+    public Byte Rssi() => (Byte)(this.ReadRegister(Registers.RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
 
-    public Byte PacketRssi() {
-      return (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
-    }
+    public Byte PacketRssi() => (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
 
-    public Double PacketSnr() {
-      return ((SByte)this.ReadRegister(Registers.PKT_SNR_VALUE)) * 0.25;
-    }
+    public Double PacketSnr() => ((SByte)this.ReadRegister(Registers.PKT_SNR_VALUE)) * 0.25;
 
     public Int64 PacketFrequencyError() {
       Int32 freqError = 0;
@@ -307,10 +291,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.WriteRegister(Registers.FRF_LSB, (Byte)(frf >> 0));
     }
 
-    public Byte GetSpreadingFactor() {
-      return (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) >> 4);
-    }
-    
+    public Byte GetSpreadingFactor() => (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) >> 4);
+
     public void SetSpreadingFactor(Byte sf) {
       if(sf < 6) {
         sf = 6;
@@ -382,9 +364,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)((this.ReadRegister(Registers.MODEM_CONFIG_1) & 0xF1) | (cr << 1)));
     }
 
-    public void SetPrePaRamp() {
-      this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
-    }
+    public void SetPrePaRamp() => this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
 
     public void EnableInvertIQ() {
       this.WriteRegister(Registers.INVERTIQ, 0x66);
@@ -408,9 +388,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     #endregion
 
     #region Debug 
-    public Byte Random() {
-      return this.ReadRegister(Registers.RSSI_WIDEBAND);
-    }
+    public Byte Random() => this.ReadRegister(Registers.RSSI_WIDEBAND);
 
     public String DumpRegisters() {
       String t = "";
@@ -496,13 +474,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     #endregion
 
     #region Powserusage
-    public void Ilde() {
-      this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.STDBY);
-    }
+    public void Ilde() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.STDBY);
 
-    public void Sleep() {
-      this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.SLEEP);
-    }
+    public void Sleep() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.SLEEP);
 
     public override void SetTxPower(Int32 level) {
       if (level > 17) {
@@ -525,21 +499,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     #endregion
 
     #region Communication
-    private Byte ReadRegister(Byte address) {
-      return this.SingleTransfer((Byte)(address & 0x7F), 0x00);
-    }
+    private Byte ReadRegister(Byte address) => this.SingleTransfer((Byte)(address & 0x7F), 0x00);
 
-    private Byte ReadRegister(Registers reg) {
-      return this.ReadRegister((Byte)reg);
-    }
+    private Byte ReadRegister(Registers reg) => this.ReadRegister((Byte)reg);
 
-    private void WriteRegister(Byte address, Byte value) {
-      this.SingleTransfer((Byte)(address | 0x80), value);
-    }
+    private void WriteRegister(Byte address, Byte value) => this.SingleTransfer((Byte)(address | 0x80), value);
 
-    private void WriteRegister(Registers reg, Byte value) {
-      this.WriteRegister((Byte)reg, value);
-    }
+    private void WriteRegister(Registers reg, Byte value) => this.WriteRegister((Byte)reg, value);
 
     private Byte SingleTransfer(Byte address, Byte value) {
       this.Selectreceiver();
@@ -564,13 +530,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.PinReset.PinMode = GpioPinDriveMode.Output;
     }
 
-    private void Selectreceiver() {
-      this.PinSlaveSelect.Write(false);
-    }
+    private void Selectreceiver() => this.PinSlaveSelect.Write(false);
 
-    private void Unselectreceiver() {
-      this.PinSlaveSelect.Write(true);
-    }
+    private void Unselectreceiver() => this.PinSlaveSelect.Write(true);
 
     public override void AttachUpdateEvent() {
       if (this.HasAttachedUpdateEvent()) {

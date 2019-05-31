@@ -10,9 +10,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     public delegate void DataUpdate(Object sender, LoraClientEvent e);
     public event DataUpdate Update;
 
-    protected LoraConnector(Dictionary<String, String> settings) {
-      this.config = settings;
-    }
+    protected LoraConnector(Dictionary<String, String> settings) => this.config = settings;
 
     public static LoraConnector GetInstance(Dictionary<String, String> settings) {
       if (settings.Count == 0) {
@@ -32,9 +30,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       return (LoraConnector)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
     }
 
-    protected void RaiseUpdateEvent(LoraClientEvent data) {
-      this.Update?.Invoke(this, data);
-    }
+    protected void RaiseUpdateEvent(LoraClientEvent data) => this.Update?.Invoke(this, data);
 
     protected Boolean HasAttachedUpdateEvent() {
       if(this.Update != null) {

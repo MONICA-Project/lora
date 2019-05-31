@@ -105,12 +105,17 @@ namespace Fraunhofer.Fit.Iot.Lora {
       }
     });
 
-    private void PanicUpdates(Object sender, PanicUpdateEvent e) => this.PanicUpdate?.Invoke(sender, e);
+    private async void PanicUpdates(Object sender, PanicUpdateEvent e) => await Task.Run(() => {
+      this.PanicUpdate?.Invoke(sender, e);
+    });
 
-    private void StatusUpdates(Object sender, StatusUpdateEvent e) => this.StatusUpdate?.Invoke(sender, e);
+    private async void StatusUpdates(Object sender, StatusUpdateEvent e) => await Task.Run(() => {
+      this.StatusUpdate?.Invoke(sender, e);
+    });
 
-    private void DataUpdates(Object sender, DataUpdateEvent e) => this.DataUpdate?.Invoke(sender, e);
-
+    private async void DataUpdates(Object sender, DataUpdateEvent e) => await Task.Run(() => {
+      this.DataUpdate?.Invoke(sender, e);
+    });
     #region IDisposable Support
     private Boolean disposedValue = false;
 
@@ -130,7 +135,7 @@ namespace Fraunhofer.Fit.Iot.Lora {
     }
 
     public void Dispose() {
-      Dispose(true);
+      this.Dispose(true);
       GC.SuppressFinalize(this);
     }
     #endregion
