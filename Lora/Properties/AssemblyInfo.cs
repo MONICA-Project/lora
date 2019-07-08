@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Fraunhofer FIT")]
 [assembly: AssemblyProduct("Lora")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 31.05.2019")]
+[assembly: AssemblyCopyright("Copyright ©  2018 - 08.07.2019")]
 [assembly: AssemblyTrademark("Fraunhofer FIT, BlubbFish")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("de-DE")]
@@ -33,8 +33,8 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.8.3")]
-[assembly: AssemblyFileVersion("1.8.3")]
+[assembly: AssemblyVersion("1.8.4")]
+[assembly: AssemblyFileVersion("1.8.4")]
 
 /*
  * 1.1.0 Now awaiing Battery as Double and fix the sending twise issue
@@ -51,4 +51,5 @@ using System.Runtime.InteropServices;
  * 1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
  * 1.8.2 Bugfix, create also an event for sending normal loradata when update panic
  * 1.8.3 Refactoring and make using threads on event occours
+ * 1.8.4 Fixing a bug related to threaded working with data
  */

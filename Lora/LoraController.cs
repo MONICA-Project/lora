@@ -10,6 +10,7 @@ namespace Fraunhofer.Fit.Iot.Lora {
   public class LoraController : IDisposable {
     private LoraConnector loraconnector;
     private readonly Dictionary<String, String> settings;
+    private readonly Object lockReceivePacket = new Object();
 
     public delegate void UpdateDataEvent(Object sender, DataUpdateEvent e);
     public delegate void UpdatePanicEvent(Object sender, PanicUpdateEvent e);
@@ -84,23 +85,25 @@ namespace Fraunhofer.Fit.Iot.Lora {
         }
       }
       if(trackerName != "") {
-        if(!this.trackers.ContainsKey(trackerName)) {
-          this.trackers.Add(trackerName, new Tracker());
-          this.trackers[trackerName].DataUpdate += this.DataUpdates;
-          this.trackers[trackerName].StatusUpdate += this.StatusUpdates;
-          this.trackers[trackerName].PanicUpdate += this.PanicUpdates;
-        }
-        if(binaryUpdate.Length > 0) {
-          this.trackers[trackerName].SetUpdate(e, binaryUpdate);
-        }
-        if(binaryPanics.Length > 0) {
-          this.trackers[trackerName].SetPanics(e, binaryPanics);
-        }
-        if(textStatus != "") {
-          this.trackers[trackerName].SetStatus(e, textStatus);
-        }
-        if(textUpdate != "") {
-          this.trackers[trackerName].SetUpdate(e, textUpdate);
+        lock(this.lockReceivePacket) {
+          if(!this.trackers.ContainsKey(trackerName)) {
+            this.trackers.Add(trackerName, new Tracker());
+            this.trackers[trackerName].DataUpdate += this.DataUpdates;
+            this.trackers[trackerName].StatusUpdate += this.StatusUpdates;
+            this.trackers[trackerName].PanicUpdate += this.PanicUpdates;
+          }
+          if(binaryUpdate.Length > 0) {
+            this.trackers[trackerName].SetUpdate(e, binaryUpdate);
+          }
+          if(binaryPanics.Length > 0) {
+            this.trackers[trackerName].SetPanics(e, binaryPanics);
+          }
+          if(textStatus != "") {
+            this.trackers[trackerName].SetStatus(e, textStatus);
+          }
+          if(textUpdate != "") {
+            this.trackers[trackerName].SetUpdate(e, textUpdate);
+          }
         }
       }
     });

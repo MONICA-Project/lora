@@ -3189,7 +3189,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       this.PinReset.Write(true);
       Thread.Sleep(150);
       this.PinReset.Write(false);
-      this.PinReset.PinMode = GpioPinDriveMode.Input;
+      this.SingleSPI(0, 128);
+      this.SingleSPI(0, 0);
+      Thread.Sleep(32); // provide at least 16 cycles on CLKHS and 16 cycles CLK32M
+      this.SingleSPI(18, 1);
+      Thread.Sleep(42); // provide at least 4 cycles on CLKHS and 32 cycles CLK32M and 4 cycles on HOST_SCK
+      this.SingleSPI(18, 2);
+      Thread.Sleep(8); // provide at least 4 cycles CLK32M and 4 cycles on HOST_SCK
+      this.SingleSPI(0, 128);
+      this.SingleSPI(0, 0);
+      //this.PinReset.PinMode = GpioPinDriveMode.Input;
     }
 
     private void SetupIO() {
