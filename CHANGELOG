@@ -11,3 +11,5 @@
 1.8.0 Add field that indicates when the last gps position was recieved, change all times to UTC
 1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
 1.8.2 Bugfix, create also an event for sending normal loradata when update panic
+1.8.3 Refactoring and make using threads on event occours
+1.8.4 Fixing a bug related to threaded working with data
