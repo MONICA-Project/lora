@@ -2,14 +2,18 @@
 ## 1.8.4
 ### New Features
 ### Bugfixes
+* #1 Fixing a bug related to last version
+
 ### Changes
-* Fixing a bug related to threaded working with data
+* Try to get rid of ppl not sync error
 
 ## 1.8.3
 ### New Features
+* Make using threads on event occours
+
 ### Bugfixes
 ### Changes
-* Refactoring and make using threads on event occours
+* Refactoring
 
 ## 1.8.2
 ### New Features
