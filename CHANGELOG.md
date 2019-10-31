@@ -1,15 +1,45 @@
-1.1.0 Now awaiing Battery as Double and fix the sending twise issue
-1.2.0 Restructure and remove old code
-1.3.0 Status event and fileds added and refactoring
-1.4.0 Implement Height in Lora
-1.4.1 Fixing parsing bug with linebreaks
-1.4.2 Adding test for LoraBinary
-1.5.0 Add support for IC880A board
-1.6.0 Fixing binary data transmission
-1.6.1 Update to local librarys
-1.7.0 Add Parsing for new Statusformat and Panic Packet
-1.8.0 Add field that indicates when the last gps position was recieved, change all times to UTC
-1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
-1.8.2 Bugfix, create also an event for sending normal loradata when update panic
-1.8.3 Refactoring and make using threads on event occours
-1.8.4 Fixing a bug related to threaded working with data
+# Changelog
+## 1.8.4
+* Fixing a bug related to threaded working with data
+
+## 1.8.3
+* Refactoring and make using threads on event occours
+
+## 1.8.2
+* Bugfix, create also an event for sending normal loradata when update panic
+
+## 1.8.1
+* Add Hostname to MQTT, so you can see from witch device the data is recieved
+
+## 1.8.0
+* Add field that indicates when the last gps position was recieved, change all times to UTC
+
+## 1.7.0
+* Add Parsing for new Statusformat and Panic Packet
+
+## 1.6.1
+* Update to local librarys
+
+## 1.6.0 
+* Fixing binary data transmission
+
+## 1.5.0
+* Add support for IC880A board
+
+## 1.4.2
+* Adding test for LoraBinary
+
+## 1.4.1
+* Fixing parsing bug with linebreaks
+
+## 1.4.0
+* Implement Height in Lora
+
+## 1.3.0
+* Status event and fileds added and refactoring
+
+## 1.2.0
+* Restructure and remove old code
+
+## 1.1.0
+* Now awaiing Battery as Double and fix the sending twise issue
