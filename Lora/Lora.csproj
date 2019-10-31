@@ -59,6 +59,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+	<None Include="..\CHANGELOG.md" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Librarys\litjson\litjson\litjson_4.7.1.csproj">
       <Project>{91a14cd2-2940-4500-8193-56d37edddbaa}</Project>
       <Name>litjson_4.7.1</Name>
