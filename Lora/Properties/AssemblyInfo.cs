@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿#if !NETCOREAPP
+using System.Reflection;
 using System.Resources;
 using System.Runtime.InteropServices;
 
@@ -10,7 +11,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Fraunhofer FIT")]
 [assembly: AssemblyProduct("Lora")]
-[assembly: AssemblyCopyright("Copyright ©  2018 - 08.07.2019")]
+[assembly: AssemblyCopyright("Copyright © BlubbFish 2018 - 08.07.2019")]
 [assembly: AssemblyTrademark("Fraunhofer FIT, BlubbFish")]
 [assembly: AssemblyCulture("")]
 [assembly: NeutralResourcesLanguage("de-DE")]
@@ -53,3 +54,4 @@ using System.Runtime.InteropServices;
  * 1.8.3 Refactoring and make using threads on event occours
  * 1.8.4 Fixing a bug related to threaded working with data
  */
+#endif

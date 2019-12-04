@@ -1,5 +1,4 @@
 ﻿using System;
-using Fraunhofer.Fit.Iot.Lora.lib;
 using Fraunhofer.Fit.Iot.Lora.Trackers;
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {

@@ -23,22 +23,22 @@ namespace Fraunhofer.Fit.Iot.Lora {
       this.settings = settings;
       try {
         this.loraconnector = LoraConnector.GetInstance(this.settings);
-        this.loraconnector.Begin();
+        _ = this.loraconnector.Begin();
         this.loraconnector.ParseConfig();
-        if (receive) {
+        if(receive) {
           this.loraconnector.Receive(0);
         } else {
           this.loraconnector.SetTxPower(17);
-          while (true) {
-            this.loraconnector.BeginPacket();
-            this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
-            this.loraconnector.EndPacket();
+          while(true) {
+            _ = this.loraconnector.BeginPacket();
+            _ = this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
+            _ = this.loraconnector.EndPacket();
             Console.WriteLine("Send!");
             System.Threading.Thread.Sleep(1000);
           }
         }
         this.loraconnector.Update += this.ReceivePacket;
-        this.loraconnector.StartRadio();
+        _ = this.loraconnector.StartRadio();
         this.loraconnector.AttachUpdateEvent();
       } catch(Exception e) {
         Helper.WriteError("Error while Loading Fraunhofer.Fit.Iot.Lora.LoraController.LoraController: " + e.Message + "\n\n" + e.StackTrace);
@@ -108,25 +108,19 @@ namespace Fraunhofer.Fit.Iot.Lora {
       }
     });
 
-    private async void PanicUpdates(Object sender, PanicUpdateEvent e) => await Task.Run(() => {
-      this.PanicUpdate?.Invoke(sender, e);
-    });
+    private async void PanicUpdates(Object sender, PanicUpdateEvent e) => await Task.Run(() => this.PanicUpdate?.Invoke(sender, e));
 
-    private async void StatusUpdates(Object sender, StatusUpdateEvent e) => await Task.Run(() => {
-      this.StatusUpdate?.Invoke(sender, e);
-    });
+    private async void StatusUpdates(Object sender, StatusUpdateEvent e) => await Task.Run(() => this.StatusUpdate?.Invoke(sender, e));
 
-    private async void DataUpdates(Object sender, DataUpdateEvent e) => await Task.Run(() => {
-      this.DataUpdate?.Invoke(sender, e);
-    });
+    private async void DataUpdates(Object sender, DataUpdateEvent e) => await Task.Run(() => this.DataUpdate?.Invoke(sender, e));
     #region IDisposable Support
     private Boolean disposedValue = false;
 
     protected virtual void Dispose(Boolean disposing) {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.Dispose(" + disposing + ")");
-      if (!this.disposedValue) {
-        if (disposing) {
-          if (this.loraconnector != null) {
+      if(!this.disposedValue) {
+        if(disposing) {
+          if(this.loraconnector != null) {
             this.loraconnector.Update -= this.ReceivePacket;
             this.loraconnector.End();
             this.loraconnector.Dispose();

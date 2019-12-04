@@ -20,22 +20,20 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public CR coderate;
     public UInt32 count_us;
     public Byte[] payload;
-    public override String ToString() {
-      return "IC880A: " + this.modulation.ToString("g") + " " +
+    public override String ToString() => "IC880A: " + this.modulation.ToString("g") + " " +
         "Size: " + this.size + " " +
         "Rssi: " + this.rssi + " " +
-        "SNR: (" + this.snr + "/" + this.snr_max + "/" + this.snr_min + ") "+
+        "SNR: (" + this.snr + "/" + this.snr_max + "/" + this.snr_min + ") " +
         "CRC: " + this.calccrc + " " +
-        "CRCStatus: " + this.status.ToString("g") + " " + 
-        "RF: " + this.radio.ToString("g") + " " + 
-        "IF" + this.@interface + " " + 
-        this.freq_hz + "Hz "+
+        "CRCStatus: " + this.status.ToString("g") + " " +
+        "RF: " + this.radio.ToString("g") + " " +
+        "IF" + this.@interface + " " +
+        this.freq_hz + "Hz " +
         "BW: " + this.bandwidth.ToString("g") + " " +
-        "DR: " + this.spreadingfactor.ToString("g") + " " + 
-        "CR: " + this.coderate.ToString("g") + " " + 
-        this.count_us + "us \n" + 
+        "DR: " + this.spreadingfactor.ToString("g") + " " +
+        "CR: " + this.coderate.ToString("g") + " " +
+        this.count_us + "us \n" +
         this.payload;
-    }
   }
 
   public class Ic800ALoraClientEvent : LoraClientEvent {
@@ -72,64 +70,58 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       this.UpdateTime = DateTime.UtcNow;
     }
 
-    private Byte ParseSpreadingFactor(SF spreadingfactor) {
-      switch(spreadingfactor) {
-        case SF.DR_LORA_SF7: return 7;
-        case SF.DR_LORA_SF8: return 8;
-        case SF.DR_LORA_SF9: return 9;
-        case SF.DR_LORA_SF10: return 10;
-        case SF.DR_LORA_SF11: return 11;
-        case SF.DR_LORA_SF12: return 12;
-      }
-      return 0;
-    }
+    private Byte ParseSpreadingFactor(SF spreadingfactor) => spreadingfactor switch
+    {
+      SF.DR_LORA_SF7 => 7,
+      SF.DR_LORA_SF8 => 8,
+      SF.DR_LORA_SF9 => 9,
+      SF.DR_LORA_SF10 => 10,
+      SF.DR_LORA_SF11 => 11,
+      SF.DR_LORA_SF12 => 12,
+      _ => 0,
+    };
 
-    private Byte ParseRadio(Reciever radio) {
-      switch(radio) {
-        case Reciever.Chain0: return 0;
-        case Reciever.Chain1: return 1;
-      }
-      return 0;
-    }
+    private Byte ParseRadio(Reciever radio) => radio switch
+    {
+      Reciever.Chain0 => 0,
+      Reciever.Chain1 => 1,
+      _ => 0,
+    };
 
-    private String ParseModulation(Modulation modulation) {
-      switch(modulation) {
-        case Ic880alora.Modulation.Fsk: return "FSK";
-        case Ic880alora.Modulation.Lora: return "Lora";
-      }
-      return "";
-    }
+    private String ParseModulation(Modulation modulation) => modulation switch
+    {
+      Ic880alora.Modulation.Fsk => "FSK",
+      Ic880alora.Modulation.Lora => "Lora",
+      _ => "",
+    };
 
-    private String ParseCrcStatus(Crc status) {
-      switch(status) {
-        case Crc.CrcOk: return "Ok";
-        case Crc.CrcBad: return "Bad";
-        case Crc.CrcNo: return "No";
-      }
-      return "";
-    }
+    private String ParseCrcStatus(Crc status) => status switch
+    {
+      Crc.CrcOk => "Ok",
+      Crc.CrcBad => "Bad",
+      Crc.CrcNo => "No",
+      _ => "",
+    };
 
-    private Byte ParseCodingRate(CR coderate) {
-      switch(coderate) {
-        case CR.CR_LORA_4_5: return 5;
-        case CR.CR_LORA_4_6: return 6;
-        case CR.CR_LORA_4_7: return 7;
-        case CR.CR_LORA_4_8: return 8;
-      }
-      return 0;
-    }
+    private Byte ParseCodingRate(CR coderate) => coderate switch
+    {
+      CR.CR_LORA_4_5 => 5,
+      CR.CR_LORA_4_6 => 6,
+      CR.CR_LORA_4_7 => 7,
+      CR.CR_LORA_4_8 => 8,
+      _ => 0,
+    };
 
-    private Int32 ParseBandwidth(BW bandwidth) {
-      switch(bandwidth) {
-        case BW.BW_7K8HZ: return 7800;
-        case BW.BW_15K6HZ: return 15600;
-        case BW.BW_31K2HZ: return 31250;
-        case BW.BW_62K5HZ: return 62500;
-        case BW.BW_125KHZ: return 125000;
-        case BW.BW_250KHZ: return 250000;
-        case BW.BW_500KHZ: return 500000;
-      }
-      return 0;
-    }
+    private Int32 ParseBandwidth(BW bandwidth) => bandwidth switch
+    {
+      BW.BW_7K8HZ => 7800,
+      BW.BW_15K6HZ => 15600,
+      BW.BW_31K2HZ => 31250,
+      BW.BW_62K5HZ => 62500,
+      BW.BW_125KHZ => 125000,
+      BW.BW_250KHZ => 250000,
+      BW.BW_500KHZ => 500000,
+      _ => 0,
+    };
   }
 }

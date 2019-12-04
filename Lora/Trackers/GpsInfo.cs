@@ -59,7 +59,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         this.Time = dv;
       }
       this.Hdop = hdop;
-      this.Fix = (lat != 0 && lon != 0);
+      this.Fix = lat != 0 && lon != 0;
       if (this.Fix) {
         this.LastLongitude = this.Longitude;
         this.LastLatitude = this.Latitude;

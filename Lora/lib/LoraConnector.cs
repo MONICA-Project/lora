@@ -17,9 +17,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         return null;
       }
       String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower();
-      Type t = null;
       try {
-        t = Type.GetType(object_sensor, true);
+        Type t = Type.GetType(object_sensor, true);
+        return (LoraConnector)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
       } catch (TypeLoadException) {
         Console.Error.WriteLine("Configuration: " + settings["type"] + " is not a LoraConnector");
         return null;
@@ -27,17 +27,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         Console.Error.WriteLine("Driver " + object_sensor + " could not load!");
         return null;
       }
-      return (LoraConnector)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
+      
     }
 
     protected void RaiseUpdateEvent(LoraClientEvent data) => this.Update?.Invoke(this, data);
 
-    protected Boolean HasAttachedUpdateEvent() {
-      if(this.Update != null) {
-        return true;
-      }
-      return false;
-    }
+    protected Boolean HasAttachedUpdateEvent() => this.Update != null;
 
     #region Constructor
     public abstract Boolean Begin();

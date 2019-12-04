@@ -1,17 +1,19 @@
-﻿using BlubbFish.Utils;
-using Fraunhofer.Fit.Iot.Lora.Events;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
+
+using BlubbFish.Utils;
+
+using Fraunhofer.Fit.Iot.Lora.Events;
+
 using Unosquare.RaspberryIO;
-using Unosquare.RaspberryIO.Gpio;
+using Unosquare.RaspberryIO.Abstractions;
+using Unosquare.WiringPi;
 
 // Hope RFM96
 // http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf
 // The RFM97 offers bandwidth options ranging from 7.8 kHz to 500 kHz with spreading factors ranging from 6 to 12, and covering all available frequency bands.
 
-namespace Fraunhofer.Fit.Iot.Lora.lib
-{
+namespace Fraunhofer.Fit.Iot.Lora.lib {
   public class Draginolora : LoraConnector, IDisposable {
 
     #region Private Vars
@@ -90,6 +92,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     
     #region Constructor
     public Draginolora(Dictionary<String, String> settings) : base(settings) {
+      Pi.Init<BootstrapWiringPi>();
       this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
       this.PinDataInput = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
       this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
@@ -192,11 +195,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
       if ((irqflags & (Byte)Irq.RX_DONE_MASK) != 0 && (irqflags & (Byte)Irq.PAYLOAD_CRC_ERROR_MASK) == 0) {
         this._packetIndex = 0;
-        if (this._implictHeaderMode) {
-          packetLenth = this.ReadRegister(Registers.PAYLOAD_LENGTH);
-        } else {
-          packetLenth = this.ReadRegister(Registers.RX_NB_BYTES);
-        }
+        packetLenth = this._implictHeaderMode ? this.ReadRegister(Registers.PAYLOAD_LENGTH) : this.ReadRegister(Registers.RX_NB_BYTES);
         this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
         this.Ilde();
       } else if (this.ReadRegister(Registers.OP_MODE) != ((Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.RX_SINGLE)) {
@@ -209,7 +208,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
     public override Byte Write(Byte[] buffer) {
       Byte currentLength = this.ReadRegister(Registers.PAYLOAD_LENGTH);
       Byte size = buffer.Length > 255 ? MaxPKTLength : (Byte)buffer.Length;
-      if ((currentLength + buffer.Length) > MaxPKTLength) {
+      if (currentLength + buffer.Length > MaxPKTLength) {
         size = (Byte)(MaxPKTLength - currentLength);
       }
       for (Byte i = 0; i < size; i++) {
@@ -266,11 +265,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
 
     public Byte PacketRssi() => (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
 
-    public Double PacketSnr() => ((SByte)this.ReadRegister(Registers.PKT_SNR_VALUE)) * 0.25;
+    public Double PacketSnr() => (SByte)this.ReadRegister(Registers.PKT_SNR_VALUE) * 0.25;
 
     public Int64 PacketFrequencyError() {
-      Int32 freqError = 0;
-      freqError = this.ReadRegister(Registers.FREQ_ERROR_MSB) & 0x07;
+      Int32 freqError = this.ReadRegister(Registers.FREQ_ERROR_MSB) & 0x07;
       freqError <<= 8;
       freqError += this.ReadRegister(Registers.FREQ_ERROR_MID);
       freqError <<= 8;
@@ -279,7 +277,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
         freqError -= 524288; // B1000'0000'0000'0000'0000
       }
       Double fXtal = 32E6; // FXOSC: crystal oscillator (XTAL) frequency (2.5. Chip Specification, p. 14)
-      Double fError = ((((Double)freqError) * (1L << 24)) / fXtal) * (this.GetSignalBandwidth() / 500000.0f); // p. 37
+      Double fError = (Double)freqError * (1L << 24) / fXtal * (this.GetSignalBandwidth() / 500000.0f); // p. 37
       return (Int64)fError;
     }
 
@@ -310,46 +308,32 @@ namespace Fraunhofer.Fit.Iot.Lora.lib
       this.SetLdoFlag();
     }
 
-    public Int64 GetSignalBandwidth() {
-      Byte bw = (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) >> 4);
-      switch (bw) {
-        case 0: return 7800;
-        case 1: return 10400;
-        case 2: return 15600;
-        case 3: return 20800;
-        case 4: return 31250;
-        case 5: return 41700;
-        case 6: return 62500;
-        case 7: return 125000;
-        case 8: return 250000;
-        case 9: return 500000;
-      }
-      return 0;
-    }
+    public Int64 GetSignalBandwidth() => (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) >> 4) switch
+    {
+      0 => 7800,
+      1 => 10400,
+      2 => 15600,
+      3 => 20800,
+      4 => 31250,
+      5 => 41700,
+      6 => 62500,
+      7 => 125000,
+      8 => 250000,
+      9 => 500000,
+      _ => 0,
+    };
 
     public void SetSignalBandwith(Int64 sbw) {
-      Byte bw;
-      if (sbw <= 7800) {
-        bw = 0;
-      } else if (sbw <= 10400) {
-        bw = 1;
-      } else if (sbw <= 15600) {
-        bw = 2;
-      } else if (sbw <= 20800) {
-        bw = 3;
-      } else if (sbw <= 31250) {
-        bw = 4;
-      } else if (sbw <= 41700) {
-        bw = 5;
-      } else if (sbw <= 62500) {
-        bw = 6;
-      } else if (sbw <= 125000) {
-        bw = 7;
-      } else if (sbw <= 250000) {
-        bw = 8;
-      } else /*if (sbw <= 500000)*/ {
-        bw = 9;
-      }
+      Byte bw = sbw <= 7800 ? (Byte)0
+        : sbw <= 10400 ? (Byte)1
+        : sbw <= 15600 ? (Byte)2
+        : sbw <= 20800 ? (Byte)3
+        : sbw <= 31250 ? (Byte)4
+        : sbw <= 41700 ? (Byte)5 
+        : sbw <= 62500 ? (Byte)6 
+        : sbw <= 125000 ? (Byte)7 
+        : sbw <= 250000 ? (Byte)8 
+        : (Byte)9;
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)((this.ReadRegister(Registers.MODEM_CONFIG_1) & 0x0f) | (bw << 4)));
       this.SetLdoFlag();
     }

@@ -57,15 +57,15 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         this.Name = GetName(data);
         Single lat = BitConverter.ToSingle(data, 3);
         Single lon = BitConverter.ToSingle(data, 7);
-        Single hdop = ((Single)data[11]) / 10;
-        Single height = ((Single)BitConverter.ToUInt16(data, 12)) / 10;
+        Single hdop = (Single)data[11] / 10;
+        Single height = (Single)BitConverter.ToUInt16(data, 12) / 10;
         Byte hour = data[14];
         Byte minute = data[15];
         Byte second = data[16];
         Byte day = data[17];
         Byte month = data[18];
         UInt16 year = (UInt16)(data[19] + 2000);
-        this.BatteryLevel = (((Single)data[20]) + 230) / 100;
+        this.BatteryLevel = ((Single)data[20] + 230) / 100;
         this.Gps.SetUpdate(lat, lon, height, hdop, hour, minute, second, day, month, year);
         //Console.WriteLine("lat: " + lat + " lon: " + lon + " hdop: " + hdop + " heigt: " + height + " hh:mm:ss: " + hour + ":" + minute + ":" + second + " DD.MM.YY: " + day + "." + month + "." + year + " bat: " + this.BatteryLevel);
         if (dataType == ParseType.Panic) {
@@ -175,13 +175,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         return false;
       }
       if (m.Length == 2) { //Normal Data Packet
-        if (m[0] == "") { //Name should not be empty
-          return false;
-        }
-        if (!Regex.Match(m[1], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9]+.[0-9],[0-9].[0-9]{2}").Success) { //lon,lat,hhmmss,hdop,height,bat not match
-          return false;
-        }
-        return true;
+        return m[0] == "" ? false : Regex.Match(m[1], "[0-9]+.[0-9]{5,10},[0-9]+.[0-9]{5,10},[0-9]{6},[0-9]+.[0-9]{2},[0-9]+.[0-9],[0-9].[0-9]{2}").Success;
       }
       if (m.Length == 3) { //Debug Packet
         if (m[0] != "deb") { //first must be "deb"
@@ -191,23 +185,12 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
           return false;
         }
         //version,ip,ssid,wififlag,battery,offset,statusmode
-        if (!Regex.Match(m[2], "^[0-9]+,[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3},[^,]+,[tf],[0-9].[0-9]{2},(-[0-9]+|[0-9]+),[0-9]").Success) {
-          return false;
-        }
-        return true;
+        return Regex.Match(m[2], "^[0-9]+,[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3},[^,]+,[tf],[0-9].[0-9]{2},(-[0-9]+|[0-9]+),[0-9]").Success;
       }
       return false;
     }
 
-    public static String GetName(String message, Int32 index) {
-      if (message.Contains("\r\n")) {
-        return message.Split(new String[] { "\r\n" }, StringSplitOptions.None)[index].Trim();
-      } else if (message.Contains("\n")) {
-        return message.Split(new String[] { "\n" }, StringSplitOptions.None)[index].Trim();
-      } else {
-        return "";
-      }
-    }
+    public static String GetName(String message, Int32 index) => message.Contains("\r\n") ? message.Split(new String[] { "\r\n" }, StringSplitOptions.None)[index].Trim() : message.Contains("\n") ? message.Split(new String[] { "\n" }, StringSplitOptions.None)[index].Trim() : "";
 
     public static String GetName(Byte[] data) {
       if(data.Length >= 3) {
@@ -215,11 +198,7 @@ namespace Fraunhofer.Fit.Iot.Lora.Trackers {
         for (Int32 i = 0; i < 2; i++) {
           ret[i] = data[i + 1];
         }
-        if (ret[1] == 0) {
-          return System.Text.Encoding.ASCII.GetString(new Byte[] { ret[0] }).Trim();
-        } else {
-          return System.Text.Encoding.ASCII.GetString(ret).Trim();
-        }
+        return ret[1] == 0 ? System.Text.Encoding.ASCII.GetString(new Byte[] { ret[0] }).Trim() : System.Text.Encoding.ASCII.GetString(ret).Trim();
       }
       return "";
     }
