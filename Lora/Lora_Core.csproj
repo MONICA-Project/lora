@@ -29,6 +29,8 @@
 1.1.0 Now awaiing Battery as Double and fix the sending twise issue</PackageReleaseNotes>
     <NeutralLanguage>de-DE</NeutralLanguage>
     <Version>1.8.4</Version>
+    <AssemblyName>Lora</AssemblyName>
+    <RootNamespace>Fraunhofer.Fit.Iot.Lora</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
