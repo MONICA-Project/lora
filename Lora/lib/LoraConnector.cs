@@ -14,7 +14,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     public static LoraConnector GetInstance(Dictionary<String, String> settings) {
       if (settings.Count == 0) {
-        return null;
+        throw new ArgumentException("Missing argument for [lora] in settingsfile");
       }
       String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower();
       try {

@@ -1,4 +1,10 @@
 # Changelog
+## 1.9.0
+### New Features
+### Bugfixes
+### Changes
+* Split Ic800A into different files
+* Fix Thread abort in netcore
 ## 1.8.4
 ### New Features
 ### Bugfixes
