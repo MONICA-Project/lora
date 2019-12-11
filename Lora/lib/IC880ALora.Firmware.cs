@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+
+using BlubbFish.Utils;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
   public partial class Ic880alora {
@@ -1564,6 +1564,49 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         this.Version = version;
         this.Address = addr;
       }
+    }
+
+    private Boolean LoadFirmware(Firmwaredata fw) {
+      LGWRegisters reg_rst;
+      LGWRegisters reg_sel;
+
+      if(fw.Mcu == 0) {
+        if(fw.Size != 8192) {
+          Helper.WriteError("ERROR: NOT A VALID SIZE FOR MCU ARG FIRMWARE");
+          return false;
+        }
+        reg_rst = Registers.MCU_RST_0;
+        reg_sel = Registers.MCU_SELECT_MUX_0;
+      } else if(fw.Mcu == 1) {
+        if(fw.Size != 8192) {
+          Helper.WriteError("ERROR: NOT A VALID SIZE FOR MCU AGC FIRMWARE");
+          return false;
+        }
+        reg_rst = Registers.MCU_RST_1;
+        reg_sel = Registers.MCU_SELECT_MUX_1;
+      } else {
+        Helper.WriteError("ERROR: NOT A VALID TARGET FOR LOADING FIRMWARE");
+        return false;
+      }
+
+      _ = this.RegisterWrite(reg_rst, 1); /* reset the targeted MCU */
+
+      _ = this.RegisterWrite(reg_sel, 0); /* set mux to access MCU program RAM and set address to 0 */
+      _ = this.RegisterWrite(Registers.MCU_PROM_ADDR, 0);
+
+      _ = this.RegisterWriteArray(Registers.MCU_PROM_DATA, fw.Data, fw.Size);      /* write the program in one burst */
+
+      _ = this.RegisterRead(Registers.MCU_PROM_DATA);       /* Read back firmware code for check */ /* bug workaround */
+      Byte[] fw_check = this.RegisterReadArray(Registers.MCU_PROM_DATA, fw.Size);
+      for(Int32 i = 0; i < fw.Size; i++) {
+        if(fw.Data[i] != fw_check[i]) {
+          Console.WriteLine("[" + i + "]in: " + fw.Data[i].ToString("X2") + " out: " + fw_check[i].ToString("X2"));
+          Helper.WriteError("ERROR: Failed to load fw " + fw.Mcu);
+          return false;
+        }
+      }
+      _ = this.RegisterWrite(reg_sel, 1);      /* give back control of the MCU program ram to the MCU */
+      return true;
     }
   }
 }
