@@ -1,95 +1,58 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{85A78B05-5843-4E4D-8C56-4BCB12613750}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Fraunhofer.Fit.Iot.Lora</RootNamespace>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <PackageId>Lora.IoT.Fit.Fraunhofer</PackageId>
+    <Description>Library that connects to a radio device and recieves lora traffic</Description>
+    <Company>Fraunhofer FIT</Company>
+    <Authors>BlubbFish</Authors>
+    <Product>Lora</Product>
+    <Copyright>Copyright © Fraunhofer FIT, BlubbFish 2018 - 08.07.2019</Copyright>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/MONICA-Project/lora</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MONICA-Project/lora.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReleaseNotes>1.8.4 Fixing a bug related to threaded working with data
+1.8.3 Refactoring and make using threads on event occours
+1.8.2 Bugfix, create also an event for sending normal loradata when update panic
+1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
+1.8.0 Add field that indicates when the last gps position was recieved, change all times to UTC
+1.7.0 Add Parsing for new Statusformat and Panic Packet
+1.6.1 Update to local librarys
+1.6.0 Fixing binary data transmission
+1.5.0 Add support for IC880A board
+1.4.2 Adding test for LoraBinary
+1.4.1 Fixing parsing bug with linebreaks
+1.4.0 Implement Height in Lora
+1.3.0 Status event and fileds added and refactoring
+1.2.0 Restructure and remove old code
+1.1.0 Now awaiing Battery as Double and fix the sending twise issue</PackageReleaseNotes>
+    <NeutralLanguage>de-DE</NeutralLanguage>
+    <Version>1.8.4</Version>
     <AssemblyName>Lora</AssemblyName>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <RootNamespace>Fraunhofer.Fit.Iot.Lora</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+  
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.ServiceProcess" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xml" />
+    <Content Include="../CHANGELOG.md" />
+	<Content Include="../CONTRIBUTING.md" />
+	<Content Include="../LICENSE" />
+	<Content Include="../README.md" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Events\Ic800ALoraClientEvent.cs" />
-    <Compile Include="Events\PanicUpdateEvent.cs" />
-    <Compile Include="Events\TrackerUpdateEvent.cs" />
-    <Compile Include="Events\GpsUpdateEvent.cs" />
-    <Compile Include="Events\UpdateEventHelper.cs" />
-    <Compile Include="Events\StatusUpdateEvent.cs" />
-    <Compile Include="Events\LoraClientEvent.cs" />
-    <Compile Include="lib\IC880ALora.cs" />
-    <Compile Include="lib\LoraConnector.cs" />
-    <Compile Include="Trackers\GpsInfo.cs" />
-    <Compile Include="Trackers\Tracker.cs" />
-    <Compile Include="Events\DataUpdateEvent.cs" />
-    <Compile Include="lib\DraginoLora.cs" />
-    <Compile Include="LoraController.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
+
   <ItemGroup>
-	<None Include="..\CHANGELOG.md" />
+    <ProjectReference Include="..\..\Librarys\litjson\litjson\litjson_Core.csproj" />
+    <ProjectReference Include="..\..\Librarys\RaspberryIO_26\Unosquare.RaspberryIO\Unosquare.RaspberryIO.csproj" />
+    <ProjectReference Include="..\..\Librarys\RaspberryIO_26\Unosquare.WiringPi\Unosquare.WiringPi.csproj" />
+    <ProjectReference Include="..\..\Utils\Iot-Interfaces\Iot-Interfaces\Iot-Interfaces_Core.csproj" />
+    <ProjectReference Include="..\..\Utils\Utils\Utils\Utils_Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Librarys\litjson\litjson\litjson_4.7.1.csproj">
-      <Project>{91a14cd2-2940-4500-8193-56d37edddbaa}</Project>
-      <Name>litjson_4.7.1</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.RaspberryIO\Unosquare.RaspberryIO.csproj">
-      <Project>{8c5d4de9-377f-4ec8-873d-6eef15f43516}</Project>
-      <Name>Unosquare.RaspberryIO</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.Swan.Lite\Unosquare.Swan.Lite.csproj">
-      <Project>{ab015683-62e5-47f1-861f-6d037f9c6433}</Project>
-      <Name>Unosquare.Swan.Lite</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Librarys\RaspberryIO\Unosquare.Swan\Unosquare.Swan.csproj">
-      <Project>{2ea5e3e4-f8c8-4742-8c78-4b070afcfb73}</Project>
-      <Name>Unosquare.Swan</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Utils\Bot-Utils\Bot-Utils\Bot-Utils.csproj">
-      <Project>{bb7bfcb5-3db0-49e1-802a-3ce3eecc59f9}</Project>
-      <Name>Bot-Utils</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Utils\Iot-Interfaces\Iot-Interfaces\Iot-Interfaces.csproj">
-      <Project>{4daada29-c600-4cf3-8ad3-9c97c8d7f632}</Project>
-      <Name>Iot-Interfaces</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Utils\Utils\Utils\Utils.csproj">
-      <Project>{fac8ce64-bf13-4ece-8097-aeb5dd060098}</Project>
-      <Name>Utils</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>
