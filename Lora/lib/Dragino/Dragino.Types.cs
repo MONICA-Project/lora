@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
   public partial class Dragino {
@@ -11,9 +9,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
     private struct Constances {
       public static Byte ChipVersion => 0x12;
+      public static Byte Lora => 0b10000000;
+      public static Byte Sleep => 0b00000000;
+      public static Byte Standby => 0b00000001;
     }
 
     private struct RegisterAdresses {
+      public static Byte OpMode => 0x01;
       public static Byte Version => 0x42;
     }
   }

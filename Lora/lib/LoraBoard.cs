@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
-  public abstract class LoraBoard : IDisposable {
+  public abstract class LoraBoard : SpiCom, IDisposable {
     protected Dictionary<String, String> config;
 
     protected LoraBoard(Dictionary<String, String> settings) => this.config = settings;

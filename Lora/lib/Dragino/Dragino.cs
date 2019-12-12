@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+
 using BlubbFish.Utils;
+
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
@@ -13,7 +15,6 @@ using Unosquare.WiringPi;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
   public partial class Dragino : LoraBoard {
-    private GpioPin PinChipSelect;
     private GpioPin PinInt0;
     private GpioPin PinInt1;
     private GpioPin PinReset;
@@ -47,14 +48,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       }
 
       // check active modem
-      /*int16_t state;
-      if (getActiveModem() != SX127X_LORA) {
+      if (this.GetActiveModem() != Constances.Lora) {
         // set LoRa mode
-        state = setActiveModem(SX127X_LORA);
-        if (state != ERR_NONE) {
-          return (state);
+        Int16 state = this.SetActiveModem(Constances.Lora);
+        if (state != Errorcodes.None) {
+          throw new Exception("SetActive Modem Failed: " + state);
         }
-      }*/
+      }
 
       // set LoRa sync word
       /*state = SX127x::setSyncWord(syncWord);
@@ -117,6 +117,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     }
 
     
+
+
     public override void Dispose() => throw new NotImplementedException();
     public override Boolean End() => throw new NotImplementedException();
     public override Boolean Send(Byte[] data, Byte @interface) => throw new NotImplementedException();
@@ -138,6 +140,22 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
       return flagFound;
     }
+
+    private Int16 GetActiveModem() => this.SPIgetRegValue(RegisterAdresses.OpMode, 7, 7);
+
+    private Int16 SetActiveModem(Byte modem) {
+      // set mode to SLEEP
+      Int16 state = this.SetMode(Constances.Sleep);
+
+      // set modem
+      state |= this.SPIsetRegValue(RegisterAdresses.OpMode, modem, 7, 7, 5);
+
+      // set mode to STANDBY
+      state |= this.SetMode(Constances.Standby);
+      return state;
+    }
+
+    private Int16 SetMode(Byte mode) => this.SPIsetRegValue(RegisterAdresses.OpMode, mode, 2, 0, 5);
 
     private void SetupIO(Byte @interface, Byte gpio) {
       // select interface
