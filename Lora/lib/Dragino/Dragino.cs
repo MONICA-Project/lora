@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using BlubbFish.Utils;
 using Unosquare.RaspberryIO;
+using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
 
 // Semtech SX1276/SX1278
@@ -10,9 +12,10 @@ using Unosquare.WiringPi;
 
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
-  public class Dragino : LoraBoard {
-    private GpioPin PinSlaveSelect;
-    private GpioPin PinDataInput;
+  public partial class Dragino : LoraBoard {
+    private GpioPin PinChipSelect;
+    private GpioPin PinInt0;
+    private GpioPin PinInt1;
     private GpioPin PinReset;
 
     #region Abstracts - LoraBoard
@@ -23,8 +26,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
     private void ParseConfig() {
       try {
-        this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
-        this.PinDataInput = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
+        this.PinChipSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
+        this.PinInt0 = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
+        this.PinInt1 = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio1"]);
         this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
       } catch (Exception e) {
         throw new ArgumentException("Some Argument is not set in settings.ini: " + e.Message);
@@ -33,16 +37,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
     public override Boolean Begin() {
       // set module properties
-      //_mod->init(RADIOLIB_USE_SPI, RADIOLIB_INT_BOTH);
+      this.SetupIO(RadioLibTypes.UseSpi, RadioLibTypes.IntBoth);
 
       // try to find the SX127x chip
-      /*if (!SX127x::findChip(chipVersion)) {
-        RADIOLIB_DEBUG_PRINTLN(F("No SX127x found!"));
-        _mod->term();
-        return (ERR_CHIP_NOT_FOUND);
+      if (!this.FindChip(Constances.ChipVersion)) {
+        throw new Exception("No SX127x found!");
       } else {
-        RADIOLIB_DEBUG_PRINTLN(F("Found SX127x!"));
-      }*/
+        this.Debug("Found SX127x!");
+      }
 
       // check active modem
       /*int16_t state;
@@ -113,10 +115,42 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       }*/
       return true;
     }
+
+    
     public override void Dispose() => throw new NotImplementedException();
     public override Boolean End() => throw new NotImplementedException();
     public override Boolean Send(Byte[] data, Byte @interface) => throw new NotImplementedException();
     public override Boolean StartRecieving() => throw new NotImplementedException();
     #endregion
+
+    private Boolean FindChip(Byte ver) {
+      Byte i = 0;
+      Boolean flagFound = false;
+      while(i < 10 && !flagFound) {
+        Byte version = this.SPIreadRegister(RegisterAdresses.Version);
+        if(version == ver) {
+          flagFound = true;
+        } else {
+          Thread.Sleep(1000);
+          i++;
+        }
+      }
+
+      return flagFound;
+    }
+
+    private void SetupIO(Byte @interface, Byte gpio) {
+      // select interface
+      if(@interface == RadioLibTypes.UseSpi) {
+        this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
+        this.PinChipSelect.Write(GpioPinValue.High);
+        Pi.Spi.Channel0Frequency = 250000;
+      }
+      // select GPIO
+      if(gpio == RadioLibTypes.IntBoth) {
+        this.PinInt0.PinMode = GpioPinDriveMode.Input;
+        this.PinInt1.PinMode = GpioPinDriveMode.Input;
+      }
+    }
   }
 }

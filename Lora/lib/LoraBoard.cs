@@ -17,5 +17,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     protected void RaiseRecieveEvent(LoraClientEvent data) => this.Recieve?.Invoke(this, data);
     public delegate void DataUpdate(Object sender, LoraClientEvent e);
     public event DataUpdate Recieve;
+
+    protected void Debug(String text) => Console.WriteLine(text);
   }
 }
