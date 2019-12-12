@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
-  public partial class Draginolora {
+  public partial class Draginolora_old {
     enum Registers : Byte {
       FIFO = 0x00,
       OP_MODE = 0x01,

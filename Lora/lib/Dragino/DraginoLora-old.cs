@@ -9,12 +9,12 @@ using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
 
-// Hope RFM96
-// http://www.hoperf.com/upload/rf/RFM95_96_97_98W.pdf
-// The RFM97 offers bandwidth options ranging from 7.8 kHz to 500 kHz with spreading factors ranging from 6 to 12, and covering all available frequency bands.
+// Semtech SX1276/SX1278
+// ../../../doc/DS_SX1276-7-8-9_W_APP_V6.pdf
+// The SX1276/77/78/79 transceivers feature the LoRa TM long range modem that provides ultra-long range spread spectrum communication and high interference immunity whilst minimising current consumption.
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
-  public partial class Draginolora : LoraBoard {
+  public partial class Draginolora_old : LoraConnector, IDisposable {
 
     #region Private Vars
     private const Byte MaxPKTLength = 255;
@@ -25,22 +25,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     private GpioPin PinDataInput;
     private GpioPin PinReset;
     private Boolean _init = false;
+    private Boolean disposedValue = false;
     #endregion
-    
-    #region Abstracts - LoraBoard
-    public Draginolora(Dictionary<String, String> settings) : base(settings) {
-      Pi.Init<BootstrapWiringPi>();
+
+    #region Constructor
+    public Draginolora_old(Dictionary<String, String> settings) : base(settings) {
       this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
       this.PinDataInput = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
       this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
-    }
-
-    public override void Dispose() {
-      this.Reset();
-      _ = this.End();
-      this.PinDataInput = null;
-      this.PinSlaveSelect = null;
-      this.PinReset = null;
     }
 
     public override Boolean Begin() {
@@ -65,33 +57,31 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.WriteRegister(Registers.MODEM_CONFIG_3, 0x04);
       this.SetTxPower(17);
       this.Ilde();
-      this.ParseConfig();
       this._init = true;
       return true;
     }
 
-    public override Boolean End() {
+    public override void End() {
       this.Sleep();
       this._init = false;
-      return true;
     }
 
-    public override Boolean Send(Byte[] data, Byte _1) {
-      _ = this.BeginPacket();
-      _ = this.Write(data);
-      return this.EndPacket();
+    public override void Dispose() {
+      if (!this.disposedValue) {
+        this.PinDataInput = null;
+        this.PinSlaveSelect = null;
+        this.PinReset = null;
+        this.disposedValue = true;
+      }
     }
 
-    public override Boolean StartRecieving() {
-      this.Receive();
-      this.WriteRegister(Registers.DIO_MAPPING_1, 0x00);
-      this.PinDataInput.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.HandleRecievedEvent);
-      return true;
-    }
-    #endregion
+    public override Boolean StartRadio() => true;
 
-    private void ParseConfig() {
-      if(!this.config.ContainsKey("frequency") || !this.config.ContainsKey("spreadingfactor") || !this.config.ContainsKey("signalbandwith") || !this.config.ContainsKey("codingrate")) {
+    public override void ParseConfig() {
+      if (!this.config.ContainsKey("frequency") ||
+        !this.config.ContainsKey("spreadingfactor") ||
+        !this.config.ContainsKey("signalbandwith") ||
+        !this.config.ContainsKey("codingrate")) {
         throw new Exception("Fraunhofer.Fit.Iot.Lora.lib.Draginolora.ParseConfig(): Not all Settings set!: [lora]\ntype=Draginolora\nfrequency=868100000\nspreadingfactor=9\nsignalbandwith=125000\ncodingrate=5 missing");
       }
       this.SetSignalBandwith(Int64.Parse(this.config["signalbandwith"]));
@@ -99,16 +89,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.SetCodingRate4(Byte.Parse(this.config["codingrate"]));
       this.DisableCrc();
     }
+    #endregion
 
     #region Packets, Read, Write
-
-    #region Send Packet
-    private Boolean BeginPacket(Boolean implictHeader = false) {
-      if(this.IsTransmitting()) {
+    public override Boolean BeginPacket(Boolean implictHeader = false) {
+      if (this.IsTransmitting()) {
         return false;
       }
       this.Ilde();
-      if(implictHeader) {
+      if (implictHeader) {
         this.ImplicitHeaderMode();
       } else {
         this.ExplicitHeaderMode();
@@ -118,83 +107,20 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       return true;
     }
 
-    private Byte Write(Byte[] buffer) {
-      Byte currentLength = this.ReadRegister(Registers.PAYLOAD_LENGTH);
-      Byte size = buffer.Length > 255 ? MaxPKTLength : (Byte)buffer.Length;
-      if(currentLength + buffer.Length > MaxPKTLength) {
-        size = (Byte)(MaxPKTLength - currentLength);
-      }
-      for(Byte i = 0; i < size; i++) {
-        this.WriteRegister(Registers.FIFO, buffer[i]);
-      }
-      this.WriteRegister(Registers.PAYLOAD_LENGTH, (Byte)(currentLength + size));
-      return size;
-    }
-
-    private Boolean EndPacket(Boolean async = false) {
+    public override Boolean EndPacket(Boolean async = false) {
       this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.TX);
-      if(async) {
+      if (async) {
         System.Threading.Thread.Sleep(150);
       } else {
-        while((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) == 0) {
+        while ((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) == 0) {
           System.Threading.Thread.Sleep(1);
         }
         this.WriteRegister(Registers.IRQ_FLAGS, (Byte)Irq.TX_DONE_MASK);
       }
       return true;
     }
-    #endregion
 
-    #region Recieve Packets
-    public void Receive(Byte size = 0) {
-      if(size > 0) {
-        this.ImplicitHeaderMode();
-        this.WriteRegister(Registers.PAYLOAD_LENGTH, (Byte)(size & 0xff));
-      } else {
-        this.ExplicitHeaderMode();
-      }
-      this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.RX_CONTINOUS);
-    }
-
-    private void HandleRecievedEvent() {
-      if(this._init) {
-        Byte irqFlags = this.ReadRegister(Registers.IRQ_FLAGS);
-
-        // clear IRQ's
-        this.WriteRegister(Registers.IRQ_FLAGS, irqFlags);
-
-        if((irqFlags & (Byte)Irq.PAYLOAD_CRC_ERROR_MASK) == 0) {
-          // received a packet
-          this._packetIndex = 0;
-
-          // read packet length
-          Byte packetLength = this._implictHeaderMode ? this.ReadRegister(Registers.PAYLOAD_LENGTH) : this.ReadRegister(Registers.RX_NB_BYTES);
-
-          // set FIFO address to current RX address
-          this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
-
-          Byte[] ms = new Byte[packetLength];
-          for(Byte i = 0; i < packetLength; i++) {
-            Int16 c = this.Read();
-            if(c != -1) {
-              ms[i] = (Byte)c;
-            } else {
-              throw new Exception("Message to Short");
-            }
-          }
-          Double snr = this.PacketSnr();
-          Byte prssi = this.PacketRssi();
-          Byte rssi = this.Rssi();
-          this.RaiseRecieveEvent(new LoraClientEvent(packetLength, ms, snr, prssi, rssi));
-
-          // reset FIFO address
-          this.WriteRegister(Registers.FIFO_ADDR_PTR, 0);
-        }
-      }
-    }
-    #endregion
-
-    private Byte ParsePacket(Byte size) {
+    public Byte ParsePacket(Byte size) {
       Byte packetLenth = 0;
       Byte irqflags = this.ReadRegister(Registers.IRQ_FLAGS);
       if (size > 0) {
@@ -206,7 +132,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
       if ((irqflags & (Byte)Irq.RX_DONE_MASK) != 0 && (irqflags & (Byte)Irq.PAYLOAD_CRC_ERROR_MASK) == 0) {
         this._packetIndex = 0;
-        packetLenth = this._implictHeaderMode ? this.ReadRegister(Registers.PAYLOAD_LENGTH) : this.ReadRegister(Registers.RX_NB_BYTES);
+        if (this._implictHeaderMode) {
+          packetLenth = this.ReadRegister(Registers.PAYLOAD_LENGTH);
+        } else {
+          packetLenth = this.ReadRegister(Registers.RX_NB_BYTES);
+        }
         this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
         this.Ilde();
       } else if (this.ReadRegister(Registers.OP_MODE) != ((Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.RX_SINGLE)) {
@@ -216,9 +146,22 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       return packetLenth;
     }
 
-    private Byte Available() => (Byte)(this.ReadRegister(Registers.RX_NB_BYTES) - this._packetIndex);
+    public override Byte Write(Byte[] buffer) {
+      Byte currentLength = this.ReadRegister(Registers.PAYLOAD_LENGTH);
+      Byte size = buffer.Length > 255 ? MaxPKTLength : (Byte)buffer.Length;
+      if ((currentLength + buffer.Length) > MaxPKTLength) {
+        size = (Byte)(MaxPKTLength - currentLength);
+      }
+      for (Byte i = 0; i < size; i++) {
+        this.WriteRegister(Registers.FIFO, buffer[i]);
+      }
+      this.WriteRegister(Registers.PAYLOAD_LENGTH, (Byte)(currentLength + size));
+      return size;
+    }
 
-    private Int16 Read() {
+    public Byte Available() => (Byte)(this.ReadRegister(Registers.RX_NB_BYTES) - this._packetIndex);
+
+    public Int16 Read() {
       if (this.Available() == 0) {
         return -1;
       }
@@ -226,7 +169,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       return this.ReadRegister(Registers.FIFO);
     }
 
-    private Int16 Peek() {
+    public Int16 Peek() {
       if (this.Available() == 0) {
         return -1;
       }
@@ -236,27 +179,38 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       return b;
     }
 
-    private void SetPreambleLength(UInt16 length) {
+    public override void Receive(Byte size) {
+      if (size > 0) {
+        this.ImplicitHeaderMode();
+        this.WriteRegister(Registers.PAYLOAD_LENGTH, (Byte)(size & 0xff));
+      } else {
+        this.ExplicitHeaderMode();
+      }
+      this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.RX_CONTINOUS);
+    }
+
+    public void SetPreambleLength(UInt16 length) {
       this.WriteRegister(Registers.PREAMBLE_MSB, (Byte)(length >> 8));
       this.WriteRegister(Registers.PREAMBLE_LSB, (Byte)(length >> 0));
     }
 
-    private void SetSyncWord(Byte sw) => this.WriteRegister(Registers.SYNC_WORD, sw);
+    public void SetSyncWord(Byte sw) => this.WriteRegister(Registers.SYNC_WORD, sw);
 
-    private void EnableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) | 0x04));
+    public void EnableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) | 0x04));
 
-    private void DisableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) & 0xfb));
+    public void DisableCrc() => this.WriteRegister(Registers.MODEM_CONFIG_2, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) & 0xfb));
     #endregion
 
     #region RadioSettings
-    private Byte Rssi() => (Byte)(this.ReadRegister(Registers.RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
+    public Byte Rssi() => (Byte)(this.ReadRegister(Registers.RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
 
-    private Byte PacketRssi() => (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
+    public Byte PacketRssi() => (Byte)(this.ReadRegister(Registers.PKT_RSSI_VALUE) - (this._frequency < 868E6 ? 164 : 157));
 
-    private Double PacketSnr() => (SByte)this.ReadRegister(Registers.PKT_SNR_VALUE) * 0.25;
+    public Double PacketSnr() => ((SByte)this.ReadRegister(Registers.PKT_SNR_VALUE)) * 0.25;
 
-    private Int64 PacketFrequencyError() {
-      Int32 freqError = this.ReadRegister(Registers.FREQ_ERROR_MSB) & 0x07;
+    public Int64 PacketFrequencyError() {
+      Int32 freqError = 0;
+      freqError = this.ReadRegister(Registers.FREQ_ERROR_MSB) & 0x07;
       freqError <<= 8;
       freqError += this.ReadRegister(Registers.FREQ_ERROR_MID);
       freqError <<= 8;
@@ -265,11 +219,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         freqError -= 524288; // B1000'0000'0000'0000'0000
       }
       Double fXtal = 32E6; // FXOSC: crystal oscillator (XTAL) frequency (2.5. Chip Specification, p. 14)
-      Double fError = (Double)freqError * (1L << 24) / fXtal * (this.GetSignalBandwidth() / 500000.0f); // p. 37
+      Double fError = ((((Double)freqError) * (1L << 24)) / fXtal) * (this.GetSignalBandwidth() / 500000.0f); // p. 37
       return (Int64)fError;
     }
 
-    private void SetFrequency(Int64 freq) {
+    public void SetFrequency(Int64 freq) {
       this._frequency = freq;
       UInt64 frf = ((UInt64)freq << 19) / 32000000;
       this.WriteRegister(Registers.FRF_MSB, (Byte)(frf >> 16));
@@ -277,15 +231,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.WriteRegister(Registers.FRF_LSB, (Byte)(frf >> 0));
     }
 
-    private Byte GetSpreadingFactor() => (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) >> 4);
+    public Byte GetSpreadingFactor() => (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_2) >> 4);
 
-    private void SetSpreadingFactor(Byte sf) {
-      if(sf < 6) {
+    public void SetSpreadingFactor(Byte sf) {
+      if (sf < 6) {
         sf = 6;
-      } else if(sf > 12) {
+      } else if (sf > 12) {
         sf = 12;
       }
-      if(sf == 6) {
+      if (sf == 6) {
         this.WriteRegister(Registers.DETECTION_OPTIMIZE, 0xC5);
         this.WriteRegister(Registers.DEDECTION_THRESHOLD, 0x0C);
       } else {
@@ -296,37 +250,51 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.SetLdoFlag();
     }
 
-    private Int64 GetSignalBandwidth() => (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) >> 4) switch
-    {
-      0 => 7800,
-      1 => 10400,
-      2 => 15600,
-      3 => 20800,
-      4 => 31250,
-      5 => 41700,
-      6 => 62500,
-      7 => 125000,
-      8 => 250000,
-      9 => 500000,
-      _ => 0,
-    };
+    public Int64 GetSignalBandwidth() {
+      Byte bw = (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) >> 4);
+      switch (bw) {
+        case 0: return 7800;
+        case 1: return 10400;
+        case 2: return 15600;
+        case 3: return 20800;
+        case 4: return 31250;
+        case 5: return 41700;
+        case 6: return 62500;
+        case 7: return 125000;
+        case 8: return 250000;
+        case 9: return 500000;
+      }
+      return 0;
+    }
 
-    private void SetSignalBandwith(Int64 sbw) {
-      Byte bw = sbw <= 7800 ? (Byte)0
-        : sbw <= 10400 ? (Byte)1
-        : sbw <= 15600 ? (Byte)2
-        : sbw <= 20800 ? (Byte)3
-        : sbw <= 31250 ? (Byte)4
-        : sbw <= 41700 ? (Byte)5 
-        : sbw <= 62500 ? (Byte)6 
-        : sbw <= 125000 ? (Byte)7 
-        : sbw <= 250000 ? (Byte)8 
-        : (Byte)9;
+    public void SetSignalBandwith(Int64 sbw) {
+      Byte bw;
+      if (sbw <= 7800) {
+        bw = 0;
+      } else if (sbw <= 10400) {
+        bw = 1;
+      } else if (sbw <= 15600) {
+        bw = 2;
+      } else if (sbw <= 20800) {
+        bw = 3;
+      } else if (sbw <= 31250) {
+        bw = 4;
+      } else if (sbw <= 41700) {
+        bw = 5;
+      } else if (sbw <= 62500) {
+        bw = 6;
+      } else if (sbw <= 125000) {
+        bw = 7;
+      } else if (sbw <= 250000) {
+        bw = 8;
+      } else /*if (sbw <= 500000)*/ {
+        bw = 9;
+      }
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)((this.ReadRegister(Registers.MODEM_CONFIG_1) & 0x0f) | (bw << 4)));
       this.SetLdoFlag();
     }
 
-    private void SetCodingRate4(Byte denominator) {
+    public void SetCodingRate4(Byte denominator) {
       if (denominator < 5) {
         denominator = 5;
       } else if (denominator > 8) {
@@ -336,30 +304,30 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)((this.ReadRegister(Registers.MODEM_CONFIG_1) & 0xF1) | (cr << 1)));
     }
 
-    private void SetPrePaRamp() => this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
+    public void SetPrePaRamp() => this.WriteRegister(Registers.PRE_PA_RAMP, (Byte)((this.ReadRegister(Registers.PRE_PA_RAMP) & 0xF0) | 0x08));
 
-    private void EnableInvertIQ() {
+    public void EnableInvertIQ() {
       this.WriteRegister(Registers.INVERTIQ, 0x66);
       this.WriteRegister(Registers.INVERTIQ2, 0x19);
     }
 
-    private void DisableInvertIQ() {
+    public void DisableInvertIQ() {
       this.WriteRegister(Registers.INVERTIQ, 0x27);
       this.WriteRegister(Registers.INVERTIQ2, 0x1D);
     }
 
-    private void SetOCP(Byte mA) {
+    public void SetOCP(Byte mA) {
       Byte opcTrim = 27;
-      if(mA <= 120) {
+      if (mA <= 120) {
         opcTrim = (Byte)((mA - 45) / 5);
-      } else if(mA <=240) {
+      } else if (mA <= 240) {
         opcTrim = (Byte)((mA + 30) / 10);
       }
       this.WriteRegister(Registers.OCP, (Byte)(0x20 | (0x1F & opcTrim)));
     }
     #endregion
 
-    #region Public Methods 
+    #region Debug 
     public Byte Random() => this.ReadRegister(Registers.RSSI_WIDEBAND);
 
     public String DumpRegisters() {
@@ -376,10 +344,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
     #region Private Methods
     private Boolean IsTransmitting() {
-      if((this.ReadRegister(Registers.OP_MODE) & (Byte)Modes.TX) == (Byte)Modes.TX) {
+      if ((this.ReadRegister(Registers.OP_MODE) & (Byte)Modes.TX) == (Byte)Modes.TX) {
         return true;
       }
-      if((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) != 0) {
+      if ((this.ReadRegister(Registers.IRQ_FLAGS) & (Byte)Irq.TX_DONE_MASK) != 0) {
         this.WriteRegister(Registers.IRQ_FLAGS, (Byte)Irq.TX_DONE_MASK);
       }
       return false;
@@ -393,6 +361,43 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     private void ImplicitHeaderMode() {
       this._implictHeaderMode = true;
       this.WriteRegister(Registers.MODEM_CONFIG_1, (Byte)(this.ReadRegister(Registers.MODEM_CONFIG_1) | 0x01));
+    }
+
+    private void HandleOnDio0Rise() {
+      if (!this.disposedValue) {
+        Byte irqFlags = this.ReadRegister(Registers.IRQ_FLAGS);
+
+        // clear IRQ's
+        this.WriteRegister(Registers.IRQ_FLAGS, irqFlags);
+
+        if ((irqFlags & (Byte)Irq.PAYLOAD_CRC_ERROR_MASK) == 0) {
+          // received a packet
+          this._packetIndex = 0;
+
+          // read packet length
+          Byte packetLength = this._implictHeaderMode ? this.ReadRegister(Registers.PAYLOAD_LENGTH) : this.ReadRegister(Registers.RX_NB_BYTES);
+
+          // set FIFO address to current RX address
+          this.WriteRegister(Registers.FIFO_ADDR_PTR, this.ReadRegister(Registers.FIFO_RX_CURRENT_ADDR));
+
+          Byte[] ms = new Byte[packetLength];
+          for (Byte i = 0; i < packetLength; i++) {
+            Int16 c = this.Read();
+            if (c != -1) {
+              ms[i] = (Byte)c;
+            } else {
+              throw new Exception("Message to Short");
+            }
+          }
+          Double snr = this.PacketSnr();
+          Byte prssi = this.PacketRssi();
+          Byte rssi = this.Rssi();
+          this.RaiseUpdateEvent(new LoraClientEvent(packetLength, ms, snr, prssi, rssi));
+
+          // reset FIFO address
+          this.WriteRegister(Registers.FIFO_ADDR_PTR, 0);
+        }
+      }
     }
 
     private void SetLdoFlag() {
@@ -409,11 +414,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     #endregion
 
     #region Powserusage
-    private void Ilde() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.STDBY);
+    public void Ilde() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.STDBY);
 
-    private void Sleep() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.SLEEP);
+    public void Sleep() => this.WriteRegister(Registers.OP_MODE, (Byte)Modes.LONG_RANGE_MODE | (Byte)Modes.SLEEP);
 
-    private void SetTxPower(Int32 level) {
+    public override void SetTxPower(Int32 level) {
       if (level > 17) {
         if (level > 20) {
           level = 20;
@@ -468,6 +473,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     private void Selectreceiver() => this.PinSlaveSelect.Write(false);
 
     private void Unselectreceiver() => this.PinSlaveSelect.Write(true);
+
+    public override void AttachUpdateEvent() {
+      if (this.HasAttachedUpdateEvent()) {
+        this.WriteRegister(Registers.DIO_MAPPING_1, 0x00);
+        this.PinDataInput.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.HandleOnDio0Rise);
+      }
+    }
     #endregion
   }
 }

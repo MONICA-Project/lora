@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
-  public partial class Draginolora {
+  public partial class Draginolora_old {
     enum Modes : Byte {
       SLEEP = 0x00,
       STDBY = 0x01,
