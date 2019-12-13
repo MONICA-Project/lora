@@ -17,11 +17,17 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     protected struct Errorcodes {
       public static Int16 ERR_WRONG_MODEM => -20;
+      public static Int16 ERR_INVALID_GAIN => -19;
       public static Int16 ERR_INVALID_PREAMBLE_LENGTH => -18;
       public static Int16 ERR_INVALID_CURRENT_LIMIT => -17;
       public static Int16 ERR_SPI_WRITE_FAILED => -16;
+      public static Int16 ERR_INVALID_OUTPUT_POWER => -13;
       public static Int16 ERR_INVALID_FREQUENCY => -12;
       public static Int16 ERR_INVALID_BIT_RANGE => -11;
+      public static Int16 ERR_INVALID_CODING_RATE => -10;
+      public static Int16 ERR_INVALID_SPREADING_FACTOR => -9;
+      public static Int16 ERR_INVALID_BANDWIDTH => -8;
+      public static Int16 ERR_CRC_MISMATCH => -7;
       public static Int16 ERR_UNKNOWN => -1;
       public static Int16 ERR_NONE => 0;
     }
@@ -63,6 +69,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       // check failed, print debug info
       return Errorcodes.ERR_SPI_WRITE_FAILED;
     }
+
+    protected Byte[] SPIreadRegisterBurst(Byte address, Byte numBytes) => this.MultiSPI(SPICommands.Read, address, new Byte[] { }, numBytes);
 
     private Byte[] MultiSPI(Byte cmd, Byte address, Byte[] value, UInt16 size) {
       Byte[] tx = new Byte[size + 1];
