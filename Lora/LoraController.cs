@@ -5,6 +5,7 @@ using Fraunhofer.Fit.Iot.Lora.Events;
 using Fraunhofer.Fit.Iot.Lora.lib;
 using BlubbFish.Utils;
 using System.Threading.Tasks;
+using Fraunhofer.Fit.Iot.Lora.lib.Dragino;
 
 namespace Fraunhofer.Fit.Iot.Lora {
   public class LoraController : IDisposable {
@@ -19,22 +20,22 @@ namespace Fraunhofer.Fit.Iot.Lora {
     public event UpdatePanicEvent PanicUpdate;
     public event UpdateStatusEvent StatusUpdate;
     public Dictionary<String, Tracker> trackers = new Dictionary<String, Tracker>();
-    public LoraController(Dictionary<String, String> settings, Boolean receive = true) {
+    public LoraController(Dictionary<String, String> settings, Boolean regularuse = true) {
       this.settings = settings;
       try {
         this.loraconnector = LoraConnector.GetInstance(this.settings);
         _ = this.loraconnector.Begin();
         this.loraconnector.ParseConfig();
-        if(receive) {
+        if(regularuse) {
           this.loraconnector.Receive(0);
         } else {
-          this.loraconnector.SetTxPower(17);
+          LoraBoard b = new Dragino(settings);
+          Console.WriteLine("Start Dragino " + b.Begin());
+          b.Recieve += this.B_Recieve;
+          Console.WriteLine("Start Recieving " + b.StartEventRecieving());
           while(true) {
-            _ = this.loraconnector.BeginPacket();
-            _ = this.loraconnector.Write(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"));
-            _ = this.loraconnector.EndPacket();
-            Console.WriteLine("Send!");
-            System.Threading.Thread.Sleep(1000);
+            System.Threading.Thread.Sleep(1000 * 30);
+            Console.WriteLine("Send! " + b.Send(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"), 0));
           }
         }
         this.loraconnector.Update += this.ReceivePacket;
@@ -46,6 +47,9 @@ namespace Fraunhofer.Fit.Iot.Lora {
       }
     }
 
+    private void B_Recieve(Object sender, LoraClientEvent e) {
+      Console.WriteLine(e.Text);
+    }
     private async void ReceivePacket(Object sender, LoraClientEvent e) => await Task.Run(() => {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: " + e.Text.Length.ToString());
       String trackerName = "";
