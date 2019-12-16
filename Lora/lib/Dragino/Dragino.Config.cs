@@ -16,12 +16,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     private Byte _cr = Codingrates.CR7;
     private SByte _power = 17;
     private Byte _gain = 0;
+    private readonly Double _br = 48;
 
     private readonly Object HandleRecievedDataLock = new Object();
     private Boolean _isrecieving = false;
+    private Boolean _istransmitting = false;
 
     private Byte _packetLength = 0;
     private Boolean _packetLengthQueried = false;
+    private Double _dataRate = 0;
 
     private void ParseConfig() {
       try {

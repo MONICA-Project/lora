@@ -49,6 +49,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       public static Byte SX127X_ADDRESS_FILTERING_NODE => 0b00000010;
       public static Byte SX127X_ADDRESS_FILTERING_NODE_BROADCAST => 0b00000100;
       public static Byte SX127X_MAX_PACKET_LENGTH => 255;
+      public static Byte SX127X_DIO0_TX_DONE => 0b01000000;
+      public static Byte SX127X_FIFO_TX_BASE_ADDR_MAX => 0b00000000;
+      public static Byte SX127X_TX => 0b00000011;
+      public static Byte SX127X_MAX_PACKET_LENGTH_FSK => 64;
+      public static Byte SX127X_DIO0_PACK_PACKET_SENT => 0b00000000;
     }
 
     private struct RegisterAdresses {
@@ -61,10 +66,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       public static Byte SX127X_REG_OCP => 0x0B;
       public static Byte SX127X_REG_LNA => 0x0C;
       public static Byte SX127X_REG_FIFO_ADDR_PTR => 0x0D;
+      public static Byte SX127X_REG_FIFO_TX_BASE_ADDR => 0x0E;
       public static Byte SX127X_REG_FIFO_RX_BASE_ADDR => 0x0F;
+      public static Byte SX127X_REG_RSSI_VALUE_FSK => 0x11;
       public static Byte SX127X_REG_IRQ_FLAGS => 0x12;
       public static Byte SX127X_REG_RX_NB_BYTES => 0x13;
+      public static Byte SX127X_REG_PKT_SNR_VALUE => 0x19;
+      public static Byte SX127X_REG_PKT_RSSI_VALUE => 0x1A;
       public static Byte SX127X_REG_MODEM_CONFIG_1 => 0x1D;
+      public static Byte SX127X_REG_FEI_MSB_FSK => 0x1D;
+      public static Byte SX127X_REG_FEI_LSB_FSK => 0x1E;
       public static Byte SX127X_REG_MODEM_CONFIG_2 => 0x1E;
       public static Byte SX127X_REG_PREAMBLE_MSB => 0x20;
       public static Byte SX127X_REG_PREAMBLE_LSB => 0x21;
@@ -73,6 +84,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       public static Byte SX127X_REG_PREAMBLE_MSB_FSK => 0x25;
       public static Byte SX127X_REG_PREAMBLE_LSB_FSK => 0x26;
       public static Byte SX1278_REG_MODEM_CONFIG_3 => 0x26;
+      public static Byte SX127X_REG_FEI_MSB => 0x28;
+      public static Byte SX127X_REG_FEI_MID => 0x29;
+      public static Byte SX127X_REG_FEI_LSB => 0x2A;
       public static Byte SX127X_REG_PACKET_CONFIG_1 => 0x30;
       public static Byte SX127X_REG_DETECT_OPTIMIZE => 0x31;
       public static Byte SX127X_REG_DETECTION_THRESHOLD => 0x37;

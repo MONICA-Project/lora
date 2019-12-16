@@ -98,7 +98,40 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     }
 
     public override void Dispose() => throw new NotImplementedException();
-    public override Boolean Send(Byte[] data, Byte @interface) => throw new NotImplementedException();
+    public override Boolean Send(Byte[] data, Byte @interface) {
+      this._istransmitting = true;
+      Int16 state = this.Transmit(data);
+      DragionoSendedObj d = new DragionoSendedObj {
+        Data = data
+      };
+      if(state == Errorcodes.ERR_NONE) {
+        // the packet was successfully transmitted
+        this.Debug("[SX1278] Transmitting packet ... success!");
+
+        // print measured data rate
+        d.Datarate = this.GetDataRate();
+        this.Debug("[SX1278] Datarate:\t"+d.Datarate+" bps");
+
+      } else if(state == Errorcodes.ERR_PACKET_TOO_LONG) {
+        // the supplied packet was longer than 256 bytes
+        this.Debug("[SX1278] Transmitting packet ... too long!");
+        d.Tolong = true;
+      } else if(state == Errorcodes.ERR_TX_TIMEOUT) {
+        // timeout occured while transmitting packet
+        this.Debug("[SX1278] Transmitting packet ... timeout!");
+        d.Txtimeout = true;
+      } else {
+        // some other error occurred
+        this.Debug("[SX1278] Transmitting packet ... failed, code "+ state);
+        d.Errorcode = state;
+      }
+      this.RaiseSendedEvent(d);
+      this._istransmitting = false;
+      if(this._isrecieving) {
+        state = this.StartReceive(0, Constances.SX127X_RXCONTINUOUS);
+      }
+      return state == Errorcodes.ERR_NONE;
+    }
 
     public override Boolean StartEventRecieving() {
       this.PinInt0.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.HandleRecievedData);
@@ -508,6 +541,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     }
     #endregion
 
+    #region Recieve
     private Int16 StartReceive(Byte len, Byte mode) {
       // set mode to standby
       Int16 state = this.SetMode(Constances.SX127X_STANDBY);
@@ -568,10 +602,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     }
 
     private void HandleRecievedData() {
+      if(this._istransmitting) {
+        return;
+      }
       lock(this.HandleRecievedDataLock) {
         // you can read received data as an Arduino String
         Int16 state = this.ReadData(out Byte[] data);
-        Dagionodata d = new Dagionodata();
+        DragionoRecievedObj d = new DragionoRecievedObj();
         if(state == Errorcodes.ERR_NONE) {
           // packet was successfully received
           this.Debug("[SX1278] Received packet!");
@@ -593,13 +630,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
           d.FreqError = this.GetFrequencyError();
           this.Debug("[SX1278] Frequency error:\t"+ d.FreqError+ " Hz");
 
+          this.RaiseRecieveEvent(d);
+
         } else if(state == Errorcodes.ERR_CRC_MISMATCH) {
           // packet was received, but is malformed
           this.Debug("[SX1278] CRC error!");
           d.Data = data;
           this.Debug("[SX1278] Data:\t\t" + BitConverter.ToString(d.Data).Replace("-", " "));
           d.Crc = false;
-
+          this.RaiseRecieveEvent(d);
         } else {
           // some other error occurred
           this.Debug("[SX1278] Failed, code " + state);
@@ -610,9 +649,100 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       }
     }
 
-    private Double GetFrequencyError() => throw new NotImplementedException();
-    private Double GetSNR() => throw new NotImplementedException();
-    private Double GetRSSI() => throw new NotImplementedException();
+    private Double GetFrequencyError(Boolean autoCorrect = false) {
+      Int16 modem = this.GetActiveModem();
+      if(modem == Constances.SX127X_LORA) {
+        // get raw frequency error
+        UInt32 raw = (UInt32)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_MSB, 3, 0) << 16;
+        raw |= (UInt32)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_MID) << 8;
+        raw |= (Byte)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_LSB);
+
+        UInt32 @base = (UInt32)2 << 23;
+        Double error;
+
+        // check the first bit
+        if((raw & 0x80000) == 0) {
+          // frequency error is negative
+          raw |= 0xFFF00000;
+          raw = ~raw + 1;
+          error = raw * (Double)@base / 32000000.0 * (this._bw / 500.0) * -1.0;
+        } else {
+          error = raw * (Double)@base / 32000000.0 * (this._bw / 500.0);
+        }
+
+        if(autoCorrect) {
+          // adjust LoRa modem data rate
+          Double ppmOffset = 0.95 * (error / 32.0);
+          this.SPIwriteRegister(0x27, (Byte)ppmOffset);
+        }
+
+        return error;
+
+      } else if(modem == Constances.SX127X_FSK_OOK) {
+        // get raw frequency error
+        UInt16 raw = (UInt16)((UInt32)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_MSB_FSK) << 8);
+        raw |= (Byte)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_LSB_FSK);
+
+        UInt32 @base = 1;
+        Double error;
+
+        // check the first bit
+        if((raw & 0x8000) == 0) {
+          // frequency error is negative
+          raw |= 0xFFF0;
+          raw = (UInt16)((UInt16)~raw + 1);
+          error = raw * (32000000.0 / (Double)(@base << 19)) * -1.0;
+        } else {
+          error = raw * (32000000.0 / (Double)(@base << 19));
+        }
+
+        return error;
+      }
+
+      return Errorcodes.ERR_UNKNOWN;
+    }
+
+    private Double GetSNR() {
+      // check active modem
+      if(this.GetActiveModem() != Constances.SX127X_LORA) {
+        return Errorcodes.ERR_WRONG_MODEM;
+      }
+
+      // get SNR value
+      SByte rawSNR = (SByte)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PKT_SNR_VALUE);
+      return rawSNR / 4.0;
+    }
+
+    private Double GetRSSI() {
+      if(this.GetActiveModem() == Constances.SX127X_LORA) {
+        // for LoRa, get RSSI of the last packet
+        Double lastPacketRSSI = this._freq < 868000000 ? -164 + this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PKT_RSSI_VALUE) : -157 + this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PKT_RSSI_VALUE);
+
+        // RSSI calculation uses different constant for low-frequency and high-frequency ports
+
+        // spread-spectrum modulation signal can be received below noise floor
+        // check last packet SNR and if it's less than 0, add it to reported RSSI to get the correct value
+        Double lastPacketSNR = this.GetSNR();
+        if(lastPacketSNR < 0.0) {
+          lastPacketRSSI += lastPacketSNR;
+        }
+
+        return lastPacketRSSI;
+
+      } else {
+        // enable listen mode
+        _ = this.StartReceive(0, Constances.SX127X_RXCONTINUOUS);
+
+        // read the value for FSK
+        Double rssi = this.SPIgetRegValue(RegisterAdresses.SX127X_REG_RSSI_VALUE_FSK) / -2.0;
+
+        // set mode back to standby
+        _ = this.SetMode(Constances.SX127X_STANDBY);
+
+        // return the value
+        return rssi;
+      }
+    }
 
     private Int16 ReadData(out Byte[] data) {
       Int16 modem = this.GetActiveModem();
@@ -682,6 +812,146 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
       return this._packetLength;
     }
+    #endregion
+
+    #region Transmitting
+    private Int16 Transmit(Byte[] data, Byte addr = 0) {
+      // set mode to standby
+      _ = this.SetMode(Constances.SX127X_STANDBY);
+      Int16 state;
+
+      Int16 modem = this.GetActiveModem();
+      DateTime start;
+      if(modem == Constances.SX127X_LORA) {
+        // calculate timeout (150 % of expected time-one-air)
+        Double symbolLength = (1 << this._sf) / (Single)this._bw;
+        Double de = 0;
+        if(symbolLength >= 16.0) {
+          de = 1;
+        }
+        Double ih = this.SPIgetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_1, 0, 0);
+        Double crc = this.SPIgetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_2, 2, 2) >> 2;
+        Double n_pre = ((UInt16)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PREAMBLE_MSB) << 8) | (Byte)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PREAMBLE_LSB);
+        Double n_pay = 8.0 + Math.Max(Math.Ceiling((8.0 * data.Length - 4.0 * this._sf + 28.0 + 16.0 * crc - 20.0 * ih) / (4.0 * this._sf - 8.0 * de)) * this._cr, 0.0);
+        UInt32 timeout = (UInt32)Math.Ceiling(symbolLength * (n_pre + n_pay + 4.25) * 1500.0);
+
+        // start transmission
+        state = this.StartTransmit(data, addr);
+        if(state != Errorcodes.ERR_NONE) {
+          return state;
+        }
+
+        // wait for packet transmission or timeout
+        start = DateTime.Now;
+        TimeSpan ms = new TimeSpan(timeout * 10000);
+        while(!this.PinInt0.Value) {
+          if(DateTime.Now - start > ms) {
+            this.ClearIRQFlags();
+            return Errorcodes.ERR_TX_TIMEOUT;
+          }
+          Thread.Sleep(1);
+        }
+
+      } else if(modem == Constances.SX127X_FSK_OOK) {
+        // calculate timeout (5ms + 500 % of expected time-on-air)
+        UInt32 timeout = 5000000 + (UInt32)(data.Length * 8 / (this._br * 1000.0) * 5000000.0);
+
+        // start transmission
+        state = this.StartTransmit(data, addr);
+        if(state != Errorcodes.ERR_NONE) {
+          return state;
+        }
+
+        // wait for transmission end or timeout
+        start = DateTime.Now;
+        TimeSpan ms = new TimeSpan(timeout * 10000);
+        while(!this.PinInt0.Value) {
+          if(DateTime.Now - start > ms) {
+            this.ClearIRQFlags();
+            _ = this.SetMode(Constances.SX127X_STANDBY);
+            return Errorcodes.ERR_TX_TIMEOUT;
+          }
+        }
+      } else {
+        return Errorcodes.ERR_UNKNOWN;
+      }
+
+      // update data rate
+      UInt32 elapsed = (UInt32)((DateTime.Now - start).Ticks / 10000);
+      this._dataRate = data.Length * 8.0 / (elapsed / 1000000.0);
+
+      // clear interrupt flags
+      this.ClearIRQFlags();
+
+      // set mode to standby to disable transmitter
+      return this.SetMode(Constances.SX127X_STANDBY);
+    }
+
+    private Double GetDataRate() => this._dataRate;
+
+    private Int16 StartTransmit(Byte[] data, Byte addr = 0) {
+      // set mode to standby
+      Int16 state = this.SetMode(Constances.SX127X_STANDBY);
+
+      Int16 modem = this.GetActiveModem();
+      if(modem == Constances.SX127X_LORA) {
+        // check packet length
+        if(data.Length >= Constances.SX127X_MAX_PACKET_LENGTH) {
+          return Errorcodes.ERR_PACKET_TOO_LONG;
+        }
+
+        // set DIO mapping
+        _ = this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DIO_MAPPING_1, Constances.SX127X_DIO0_TX_DONE, 7, 6);
+
+        // clear interrupt flags
+        this.ClearIRQFlags();
+
+        // set packet length
+        state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_PAYLOAD_LENGTH, (Byte)data.Length);
+
+        // set FIFO pointers
+        state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FIFO_TX_BASE_ADDR, Constances.SX127X_FIFO_TX_BASE_ADDR_MAX);
+        state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FIFO_ADDR_PTR, Constances.SX127X_FIFO_TX_BASE_ADDR_MAX);
+
+        // write packet to FIFO
+        this.SPIwriteRegisterBurst(RegisterAdresses.SX127X_REG_FIFO, data);
+
+        // start transmission
+        state |= this.SetMode(Constances.SX127X_TX);
+        return state != Errorcodes.ERR_NONE ? state : Errorcodes.ERR_NONE;
+
+      } else if(modem == Constances.SX127X_FSK_OOK) {
+        // check packet length
+        if(data.Length >= Constances.SX127X_MAX_PACKET_LENGTH_FSK) {
+          return Errorcodes.ERR_PACKET_TOO_LONG;
+        }
+
+        // set DIO mapping
+        _ = this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DIO_MAPPING_1, Constances.SX127X_DIO0_PACK_PACKET_SENT, 7, 6);
+
+        // clear interrupt flags
+        this.ClearIRQFlags();
+
+        // set packet length
+        this.SPIwriteRegister(RegisterAdresses.SX127X_REG_FIFO, (Byte)data.Length);
+
+        // check address filtering
+        Int16 filter = this.SPIgetRegValue(RegisterAdresses.SX127X_REG_PACKET_CONFIG_1, 2, 1);
+        if(filter == Constances.SX127X_ADDRESS_FILTERING_NODE || filter == Constances.SX127X_ADDRESS_FILTERING_NODE_BROADCAST) {
+          this.SPIwriteRegister(RegisterAdresses.SX127X_REG_FIFO, addr);
+        }
+
+        // write packet to FIFO
+        this.SPIwriteRegisterBurst(RegisterAdresses.SX127X_REG_FIFO, data);
+
+        // start transmission
+        state |= this.SetMode(Constances.SX127X_TX);
+        return state != Errorcodes.ERR_NONE ? state : Errorcodes.ERR_NONE;
+      }
+
+      return Errorcodes.ERR_UNKNOWN;
+    }
+    #endregion
 
     private void SetupIO(Byte @interface, Byte gpio) {
       // select interface

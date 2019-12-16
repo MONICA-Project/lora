@@ -1,31 +1,42 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.Threading.Tasks;
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
 
-  public struct Dagionodata {
+  public class RecievedData {  }
+
+  public class SendedData {  }
+
+  public class DragionoRecievedObj : RecievedData {
     public Byte[] Data {
-      get;
-      internal set;
+      get; set;
     }
     public Double Rssi {
-      get;
-      internal set;
+      get; set;
     }
     public Double Snr {
-      get;
-      internal set;
+      get; set;
     }
     public Double FreqError {
-      get;
-      internal set;
+      get; set;
     }
-    public Boolean Crc {
-      get;
-      internal set;
-    } = true;
+    public Boolean Crc { get; set; } = true;
+  }
+
+  public class DragionoSendedObj : SendedData {
+    public Byte[] Data {
+      get; set;
+    }
+    public Double Datarate {
+      get; set;
+    }
+    public Boolean Tolong { get; set; } = false;
+    public Boolean Txtimeout { get; set; } = false;
+    public Int16 Errorcode {
+      get; set;
+    }
   }
 
   public abstract class LoraBoard : SpiCom, IDisposable {
@@ -38,9 +49,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     public abstract Boolean Send(Byte[] data, Byte @interface);
     public abstract Boolean StartEventRecieving();
 
-    protected void RaiseRecieveEvent(LoraClientEvent data) => this.Recieve?.Invoke(this, data);
-    public delegate void DataUpdate(Object sender, LoraClientEvent e);
-    public event DataUpdate Recieve;
+    protected async void RaiseRecieveEvent(RecievedData obj) => await Task.Run(() => this.Recieved?.Invoke(this, obj));
+    protected async void RaiseSendedEvent(SendedData obj) => await Task.Run(() => this.Sended?.Invoke(this, obj));
+    public delegate void RecieveUpdate(Object sender, RecievedData e);
+    public delegate void SendUpdate(Object sender, SendedData e);
+    public event RecieveUpdate Recieved;
+    public event SendUpdate Sended;
 
     protected void Debug(String text) => Console.WriteLine(text);
   }
