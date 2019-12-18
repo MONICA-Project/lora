@@ -22,13 +22,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     public override Boolean Begin() {
       // set module properties
       this.SetupIO(RadioLibTypes.RADIOLIB_USE_SPI, RadioLibTypes.RADIOLIB_INT_0);
+      this.Reset();
 
       // try to find the SX127x chip
       if(!this.FindChip(Constances.SX1278_CHIP_VERSION)) {
         throw new Exception("No SX127x found!");
-      } else {
-        this.Debug("Found SX127x!");
-      }
+      } 
 
       // check active modem
       Int16 state;
@@ -37,67 +36,79 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         state = this.SetActiveModem(Constances.SX127X_LORA);
         if(state != Errorcodes.ERR_NONE) {
           throw new Exception("SetActiveModem Failed: " + state);
-        }
+        } 
       }
 
       // set LoRa sync word
       state = this.SetSyncWord(this._syncWord);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetSyncWord Failed: " + state);
-      }
+      } 
 
       // set over current protection
       state = this.SetCurrentLimit(this._currentLimit);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetCurrentLimit Failed: " + state);
-      }
+      } 
 
       // set preamble length
       state = this.SetPreambleLength(this._preambleLength);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetPreambleLength Failed: " + state);
-      }
+      } 
 
       // configure settings not accessible by API
       state = this.Config();
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("Config Failed: " + state);
-      }
+      } 
 
       // configure publicly accessible settings
       state = this.SetFrequency(this._freq);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetFrequency Failed: " + state);
-      }
+      } 
 
       state = this.SetBandwidth(this._bw);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetBandwidth Failed: " + state);
-      }
+      } 
 
       state = this.SetSpreadingFactor(this._sf);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetSpreadingFactor Failed: " + state);
-      }
+      } 
 
       state = this.SetCodingRate(this._cr);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("SetCodingRate Failed: " + state);
-      }
+      } 
 
       state = this.SetOutputPower(this._power);
       if (state != Errorcodes.ERR_NONE) {
         throw new Exception("SetOutputPower Failed: " + state);
-      }
+      } 
 
       state = this.SetGain(this._gain);
       if (state != Errorcodes.ERR_NONE) {
-        throw new Exception("SetOutputPower Failed: " + state);
-      }
+        throw new Exception("SetGain Failed: " + state);
+      } 
+
+      this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Dragino.Dragino.Begin(): Succsessfull init Draginoboard with SX1276 Chip!");
       return true;
     }
 
-    public override void Dispose() => throw new NotImplementedException();
+    public override void Dispose() {
+      this._recieverThreadRunning = false;
+      while(this._recieverThread.IsAlive) {
+        Thread.Sleep(10);
+      }
+      this._recieverThread = null;
+      _ = this.SetMode(Constances.SX127X_SLEEP);
+      this.ClearIRQFlags();
+      this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Dragino.Dragino.Dispose(): Succsessfull shutdown Draginoboard with SX1276 Chip!");
+    }
+
     public override Boolean Send(Byte[] data, Byte @interface) {
       this._istransmitting = true;
       Int16 state = this.Transmit(data);
@@ -106,23 +117,23 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       };
       if(state == Errorcodes.ERR_NONE) {
         // the packet was successfully transmitted
-        this.Debug("[SX1278] Transmitting packet ... success!");
+        //this.Debug("[SX1278] Transmitting packet ... success!");
 
         // print measured data rate
         d.Datarate = this.GetDataRate();
-        this.Debug("[SX1278] Datarate:\t"+d.Datarate+" bps");
+        //this.Debug("[SX1278] Datarate:\t"+d.Datarate+" bps");
 
       } else if(state == Errorcodes.ERR_PACKET_TOO_LONG) {
         // the supplied packet was longer than 256 bytes
-        this.Debug("[SX1278] Transmitting packet ... too long!");
-        d.Tolong = true;
+        //this.Debug("[SX1278] Transmitting packet ... too long!");
+        d.Msgtolong = true;
       } else if(state == Errorcodes.ERR_TX_TIMEOUT) {
         // timeout occured while transmitting packet
-        this.Debug("[SX1278] Transmitting packet ... timeout!");
+        //this.Debug("[SX1278] Transmitting packet ... timeout!");
         d.Txtimeout = true;
       } else {
         // some other error occurred
-        this.Debug("[SX1278] Transmitting packet ... failed, code "+ state);
+        //this.Debug("[SX1278] Transmitting packet ... failed, code "+ state);
         d.Errorcode = state;
       }
       this.RaiseSendedEvent(d);
@@ -134,7 +145,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     }
 
     public override Boolean StartEventRecieving() {
-      this.PinInt0.RegisterInterruptCallback(EdgeDetection.RisingEdge, this.HandleRecievedData);
+      this._recieverThread = new Thread(this.RecieverThreadRunner);
+      this._recieverThreadRunning = true;
+      this._recieverThread.Start();
       Int16 state = this.StartReceive(0, Constances.SX127X_RXCONTINUOUS);
       if(state != Errorcodes.ERR_NONE) {
         throw new Exception("StartReceive Failed: " + state);
@@ -142,9 +155,17 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this._isrecieving = true;
       return true;
     }
+
     #endregion
 
     #region Private Methodes
+    private void Reset() {
+      this.PinReset.Write(false);
+      Thread.Sleep(100);
+      this.PinReset.Write(true);
+      Thread.Sleep(100);
+    }
+
     private Boolean FindChip(Byte ver) {
       Byte i = 0;
       Boolean flagFound = false;
@@ -324,12 +345,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       Int16 state = this.SetMode(Constances.SX127X_STANDBY);
 
       // calculate register values
-      UInt32 FRF = (UInt32)(newFreq * (1 << Constances.SX127X_DIV_EXPONENT) / Constances.SX127X_CRYSTAL_FREQ);
+      UInt64 FRF = ((UInt64)newFreq << 19) / 32000000;
 
       // write registers
-      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_MSB, (Byte)((FRF & 0xFF0000) >> 16));
-      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_MID, (Byte)((FRF & 0x00FF00) >> 8));
-      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_LSB, (Byte)(FRF & 0x0000FF));
+      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_MSB, (Byte)(FRF >> 16));
+      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_MID, (Byte)(FRF >> 8));
+      state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_FRF_LSB, (Byte)(FRF >> 0));
       return state;
     }
 
@@ -372,8 +393,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         this._bw = bw;
 
         // calculate symbol length and set low data rate optimization, if needed
-        Single symbolLength = (Single)(1 << this._sf) / this._bw;
-        this.Debug("Symbol length: " + symbolLength + " ms");
+        Single symbolLength = (Single)(1 << this._sf) / (this._bw / 1000);
+       // this.Debug("Symbol length: " + symbolLength + " ms");
         state = symbolLength >= 16.0 ? this.SPIsetRegValue(RegisterAdresses.SX1278_REG_MODEM_CONFIG_3, Constances.SX1278_LOW_DATA_RATE_OPT_ON, 3, 3) : this.SPIsetRegValue(RegisterAdresses.SX1278_REG_MODEM_CONFIG_3, Constances.SX1278_LOW_DATA_RATE_OPT_OFF, 3, 3);
       }
       return state;
@@ -421,8 +442,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         this._sf = sf;
 
         // calculate symbol length and set low data rate optimization, if needed
-        Single symbolLength = (Single)(1 << this._sf) / this._bw;
-        this.Debug("Symbol length: " + symbolLength + " ms");
+        Single symbolLength = (Single)(1 << this._sf) / (this._bw / 1000);
+        //this.Debug("Symbol length: " + symbolLength + " ms");
         state = symbolLength >= 16.0 ? this.SPIsetRegValue(RegisterAdresses.SX1278_REG_MODEM_CONFIG_3, Constances.SX1278_LOW_DATA_RATE_OPT_ON, 3, 3) : this.SPIsetRegValue(RegisterAdresses.SX1278_REG_MODEM_CONFIG_3, Constances.SX1278_LOW_DATA_RATE_OPT_OFF, 3, 3);
       }
       return state;
@@ -435,11 +456,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       // write registers
       if(newSpreadingFactor == SpreadingFactors.SX127X_SF_6) {
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_1, Constances.SX1278_HEADER_IMPL_MODE, 0, 0);
+        this._headerexplict = false;
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_2, (Byte)(SpreadingFactors.SX127X_SF_6 | Constances.SX127X_TX_MODE_SINGLE | Constances.SX1278_RX_CRC_MODE_ON), 7, 2);
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DETECT_OPTIMIZE, Constances.SX127X_DETECT_OPTIMIZE_SF_6, 2, 0);
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DETECTION_THRESHOLD, Constances.SX127X_DETECTION_THRESHOLD_SF_6);
       } else {
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_1, Constances.SX1278_HEADER_EXPL_MODE, 0, 0);
+        this._headerexplict = true;
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_2, (Byte)(newSpreadingFactor | Constances.SX127X_TX_MODE_SINGLE | Constances.SX1278_RX_CRC_MODE_ON), 7, 2);
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DETECT_OPTIMIZE, Constances.SX127X_DETECT_OPTIMIZE_SF_7_12, 2, 0);
         state |= this.SPIsetRegValue(RegisterAdresses.SX127X_REG_DETECTION_THRESHOLD, Constances.SX127X_DETECTION_THRESHOLD_SF_7_12);
@@ -542,9 +565,20 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     #endregion
 
     #region Recieve
+    private void RecieverThreadRunner() {
+      while(this._recieverThreadRunning) {
+        if(this.PinInt0.Value) {
+          this.HandleRecievedData();
+        }
+        Thread.Sleep(1);
+      }
+    }
+
     private Int16 StartReceive(Byte len, Byte mode) {
       // set mode to standby
       Int16 state = this.SetMode(Constances.SX127X_STANDBY);
+
+      _ = this.SetCRC(!this._headerexplict);
 
       Int16 modem = this.GetActiveModem();
       if(modem == Constances.SX127X_LORA) {
@@ -611,32 +645,33 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         DragionoRecievedObj d = new DragionoRecievedObj();
         if(state == Errorcodes.ERR_NONE) {
           // packet was successfully received
-          this.Debug("[SX1278] Received packet!");
+          //this.Debug("[SX1278] Received packet!");
 
           // print data of the packet
           d.Data = data;
-          this.Debug("[SX1278] Data:\t\t"+ BitConverter.ToString(d.Data).Replace("-", " "));
+          //this.Debug("[SX1278] Data:\t\t"+ BitConverter.ToString(d.Data).Replace("-", " "));
 
 
           // print RSSI (Received Signal Strength Indicator)
           d.Rssi = this.GetRSSI();
-          this.Debug("[SX1278] RSSI:\t\t" + d.Rssi + " dBm");
+          //this.Debug("[SX1278] RSSI:\t\t" + d.Rssi + " dBm");
 
           // print SNR (Signal-to-Noise Ratio)
           d.Snr = this.GetSNR();
-          this.Debug("[SX1278] SNR:\t\t"+d.Snr+ " dB");
+          //this.Debug("[SX1278] SNR:\t\t"+d.Snr+ " dB");
 
           // print frequency error
           d.FreqError = this.GetFrequencyError();
-          this.Debug("[SX1278] Frequency error:\t"+ d.FreqError+ " Hz");
+          //this.Debug("[SX1278] Frequency error:\t"+ d.FreqError+ " Hz");
 
           this.RaiseRecieveEvent(d);
-
         } else if(state == Errorcodes.ERR_CRC_MISMATCH) {
           // packet was received, but is malformed
-          this.Debug("[SX1278] CRC error!");
+          //this.Debug("[SX1278] CRC error!");
+          
           d.Data = data;
-          this.Debug("[SX1278] Data:\t\t" + BitConverter.ToString(d.Data).Replace("-", " "));
+          //this.Debug("[SX1278] Data:\t\t" + BitConverter.ToString(d.Data).Replace("-", " "));
+          
           d.Crc = false;
           this.RaiseRecieveEvent(d);
         } else {
@@ -656,19 +691,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         UInt32 raw = (UInt32)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_MSB, 3, 0) << 16;
         raw |= (UInt32)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_MID) << 8;
         raw |= (Byte)this.SPIgetRegValue(RegisterAdresses.SX127X_REG_FEI_LSB);
-
-        UInt32 @base = (UInt32)2 << 23;
-        Double error;
-
+        
+        Double FreqError = raw;
+        Double multipler = (UInt32)2 << 23;
+        Double Fxtal = 32000000;
+        Double bw = this._bw / 1000;
+        Double fhu = 500;
         // check the first bit
-        if((raw & 0x80000) == 0) {
-          // frequency error is negative
-          raw |= 0xFFF00000;
-          raw = ~raw + 1;
-          error = raw * (Double)@base / 32000000.0 * (this._bw / 500.0) * -1.0;
-        } else {
-          error = raw * (Double)@base / 32000000.0 * (this._bw / 500.0);
+        if(raw > 524287) {
+          FreqError -= 524288;
+          FreqError *= -1;
         }
+        Double error = FreqError * multipler / Fxtal * (bw / fhu);
 
         if(autoCorrect) {
           // adjust LoRa modem data rate
@@ -691,9 +725,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
           // frequency error is negative
           raw |= 0xFFF0;
           raw = (UInt16)((UInt16)~raw + 1);
-          error = raw * (32000000.0 / (Double)(@base << 19)) * -1.0;
+          error = raw * (32000000.0 / (@base << 19)) * -1.0;
         } else {
-          error = raw * (32000000.0 / (Double)(@base << 19));
+          error = raw * (32000000.0 / (@base << 19));
         }
 
         return error;
@@ -812,6 +846,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
 
       return this._packetLength;
     }
+
+    private Int16 SetCRC(Boolean enableCRC) {
+      if(this.GetActiveModem() == Constances.SX127X_LORA) {
+        // set LoRa CRC
+        return enableCRC ? this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_2, Constances.SX1278_RX_CRC_MODE_ON, 2, 2) : this.SPIsetRegValue(RegisterAdresses.SX127X_REG_MODEM_CONFIG_2, Constances.SX1278_RX_CRC_MODE_OFF, 2, 2);
+      } else {
+        // set FSK CRC
+        return enableCRC ? this.SPIsetRegValue(RegisterAdresses.SX127X_REG_PACKET_CONFIG_1, Constances.SX127X_CRC_ON, 4, 4) : this.SPIsetRegValue(RegisterAdresses.SX127X_REG_PACKET_CONFIG_1, Constances.SX127X_CRC_OFF, 4, 4);
+      }
+    }
     #endregion
 
     #region Transmitting
@@ -819,6 +863,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       // set mode to standby
       _ = this.SetMode(Constances.SX127X_STANDBY);
       Int16 state;
+
+      _ = this.SetCRC(true);
 
       Int16 modem = this.GetActiveModem();
       DateTime start;
@@ -877,8 +923,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       }
 
       // update data rate
-      UInt32 elapsed = (UInt32)((DateTime.Now - start).Ticks / 10000);
-      this._dataRate = data.Length * 8.0 / (elapsed / 1000000.0);
+      this._dataRate = data.Length * 8.0 / ((DateTime.Now - start).TotalMilliseconds / 1000);
 
       // clear interrupt flags
       this.ClearIRQFlags();
@@ -957,6 +1002,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       // select interface
       if(@interface == RadioLibTypes.RADIOLIB_USE_SPI) {
         this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
+        this.PinReset.PinMode = GpioPinDriveMode.Output;
         this.PinChipSelect.Write(GpioPinValue.High);
         Pi.Spi.Channel0Frequency = 250000;
       }

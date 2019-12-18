@@ -26,6 +26,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       public static Byte SX1278_HEADER_EXPL_MODE => 0b00000000;
       public static Byte SX127X_TX_MODE_SINGLE => 0b00000000;
       public static Byte SX1278_RX_CRC_MODE_ON => 0b00000100;
+      public static Byte SX1278_RX_CRC_MODE_OFF => 0b00000000;
+      public static Byte SX127X_CRC_ON => 0b00010000;
+      public static Byte SX127X_CRC_OFF => 0b00000000;
       public static Byte SX127X_DETECT_OPTIMIZE_SF_6 => 0b00000101;
       public static Byte SX127X_DETECT_OPTIMIZE_SF_7_12 => 0b00000011;
       public static Byte SX127X_DETECTION_THRESHOLD_SF_6 => 0b00001100;
@@ -40,7 +43,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       public static Byte SX1278_AGC_AUTO_ON => 0b00000100;
       public static Byte SX127X_LNA_BOOST_ON => 0b00000011;
       public static Byte SX127X_RXCONTINUOUS => 0b00000101;
-      public static Byte SX127X_RX => 0b00000101;
+      public static Byte SX127X_RX => 0b00000110;
       public static Byte SX127X_DIO0_RX_DONE => 0b00000000;
       public static Byte SX127X_DIO1_RX_TIMEOUT => 0b00000000;
       public static Byte SX127X_FIFO_RX_BASE_ADDR_MAX => 0b00000000;

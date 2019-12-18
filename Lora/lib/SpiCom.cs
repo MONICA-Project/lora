@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Threading;
 using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
 
@@ -47,7 +47,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       return (Byte)(rawValue & ((0b11111111 << lsb) & (0b11111111 >> (7 - msb))));
     }
 
-    protected Int16 SPIsetRegValue(Byte address, Byte value, Byte msb = 7, Byte lsb = 0, Byte checkInterval = 2) {
+    protected Int16 SPIsetRegValue(Byte address, Byte value, Byte msb = 7, Byte lsb = 0, UInt16 checkInterval = 2) {
       if(msb > 7 || lsb > 7 || lsb > msb) {
         return Errorcodes.ERR_INVALID_BIT_RANGE;
       }
@@ -59,13 +59,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
       // check register value each millisecond until check interval is reached
       // some registers need a bit of time to process the change (e.g. SX127X_REG_OP_MODE)
-      DateTime start = DateTime.Now;
-      TimeSpan ms = new TimeSpan(checkInterval * 10000);
-      while(DateTime.Now - start < ms) {
-        if(this.SPIreadRegister(address) == newValue) {
+      for(UInt16 i = 0; i < checkInterval; i++) {
+        currentValue = this.SPIreadRegister(address);
+        if(currentValue == newValue) {
           // check passed, we can stop the loop
           return Errorcodes.ERR_NONE;
         }
+        Thread.Sleep(1);
       }
 
       // check failed, print debug info
