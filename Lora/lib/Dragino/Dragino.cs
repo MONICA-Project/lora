@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 
+using Fraunhofer.Fit.Iot.Lora.Events;
+
 using Unosquare.RaspberryIO;
 using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
@@ -19,7 +21,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.ParseConfig();
     }
 
-    public override Boolean Begin() {
+    public override void Begin() {
       // set module properties
       this.SetupIO(RadioLibTypes.RADIOLIB_USE_SPI, RadioLibTypes.RADIOLIB_INT_0);
       this.Reset();
@@ -95,7 +97,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       } 
 
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Dragino.Dragino.Begin(): Succsessfull init Draginoboard with SX1276 Chip!");
-      return true;
     }
 
     public override void Dispose() {
@@ -109,42 +110,36 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Dragino.Dragino.Dispose(): Succsessfull shutdown Draginoboard with SX1276 Chip!");
     }
 
-    public override Boolean Send(Byte[] data, Byte @interface) {
+    public override void Send(Byte[] data, Byte @interface) {
       this._istransmitting = true;
       Int16 state = this.Transmit(data);
-      DragionoSendedObj d = new DragionoSendedObj {
+      DragionoTransmittedObj d = new DragionoTransmittedObj {
         Data = data
       };
       if(state == Errorcodes.ERR_NONE) {
-        // the packet was successfully transmitted
-        //this.Debug("[SX1278] Transmitting packet ... success!");
-
-        // print measured data rate
+        // get measured data rate
         d.Datarate = this.GetDataRate();
-        //this.Debug("[SX1278] Datarate:\t"+d.Datarate+" bps");
-
       } else if(state == Errorcodes.ERR_PACKET_TOO_LONG) {
         // the supplied packet was longer than 256 bytes
-        //this.Debug("[SX1278] Transmitting packet ... too long!");
         d.Msgtolong = true;
       } else if(state == Errorcodes.ERR_TX_TIMEOUT) {
         // timeout occured while transmitting packet
-        //this.Debug("[SX1278] Transmitting packet ... timeout!");
         d.Txtimeout = true;
       } else {
         // some other error occurred
-        //this.Debug("[SX1278] Transmitting packet ... failed, code "+ state);
         d.Errorcode = state;
       }
-      this.RaiseSendedEvent(d);
+      this.RaiseTransmittedEvent(d);
       this._istransmitting = false;
       if(this._isrecieving) {
         state = this.StartReceive(0, Constances.SX127X_RXCONTINUOUS);
       }
-      return state == Errorcodes.ERR_NONE;
+      if(state != Errorcodes.ERR_NONE) {
+        throw new Exception("Sending has failed: " + state);
+      }
     }
 
-    public override Boolean StartEventRecieving() {
+    public override void StartEventRecieving() {
       this._recieverThread = new Thread(this.RecieverThreadRunner);
       this._recieverThreadRunning = true;
       this._recieverThread.Start();
@@ -153,7 +148,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         throw new Exception("StartReceive Failed: " + state);
       }
       this._isrecieving = true;
-      return true;
     }
 
     #endregion

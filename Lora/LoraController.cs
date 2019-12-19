@@ -1,59 +1,95 @@
 ﻿using System;
 using System.Collections.Generic;
-using Fraunhofer.Fit.Iot.Lora.Trackers;
+using System.Threading;
+
+using BlubbFish.Utils;
+
 using Fraunhofer.Fit.Iot.Lora.Events;
 using Fraunhofer.Fit.Iot.Lora.lib;
-using BlubbFish.Utils;
-using System.Threading.Tasks;
-using Fraunhofer.Fit.Iot.Lora.lib.Dragino;
 
 namespace Fraunhofer.Fit.Iot.Lora {
   public class LoraController : IDisposable {
-    private LoraConnector loraconnector;
-    private readonly Dictionary<String, String> settings;
-    private readonly Object lockReceivePacket = new Object();
+    private LoraBoard loraboard;
+    private Boolean _isinit = false;
+    private Thread _testThread;
+    private Boolean _testThreadRunning = false;
 
+    public delegate void TransmittedEvent(Object sender, TransmittedData e);
+    public delegate void ReceivedEvent(Object sender, RecievedData e);
+    public event TransmittedEvent Transmitted;
+    public event ReceivedEvent Received;
+
+    /*private readonly Object lockReceivePacket = new Object();
     public delegate void UpdateDataEvent(Object sender, DataUpdateEvent e);
     public delegate void UpdatePanicEvent(Object sender, PanicUpdateEvent e);
     public delegate void UpdateStatusEvent(Object sender, StatusUpdateEvent e);
     public event UpdateDataEvent DataUpdate;
     public event UpdatePanicEvent PanicUpdate;
     public event UpdateStatusEvent StatusUpdate;
-    public Dictionary<String, Tracker> trackers = new Dictionary<String, Tracker>();
-    public LoraController(Dictionary<String, String> settings, Boolean regularuse = true) {
-      this.settings = settings;
+    public Dictionary<String, Tracker> trackers = new Dictionary<String, Tracker>();*/
+    
+
+    public LoraController(Dictionary<String, String> settings) {
       try {
-        
-        if(regularuse) {
-          this.loraconnector = LoraConnector.GetInstance(this.settings);
-          _ = this.loraconnector.Begin();
-          this.loraconnector.ParseConfig();
-          this.loraconnector.Receive(0);
-          this.loraconnector.Update += this.ReceivePacket;
-          _ = this.loraconnector.StartRadio();
-          this.loraconnector.AttachUpdateEvent();
-        } else {
-          LoraBoard b = new Dragino(settings);
-          b.Recieved += this.B_Recieved;
-          b.Sended += this.B_Sended;
-          Console.WriteLine("Start Dragino " + b.Begin());
-          Console.WriteLine("Start Recieving " + b.StartEventRecieving());
-          while(true) {
-            System.Threading.Thread.Sleep(1000 * 30);
-            _ = b.Send(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"), 0);
-          }
+        this.loraboard = LoraBoard.GetInstance(settings);
+        this.loraboard.Recieved += this.PacketReceived;
+        this.loraboard.Transmitted += this.PacketTransmitted;
+        this.loraboard.Begin();
+        this.loraboard.StartEventRecieving();
+        this._isinit = true;
+        if(settings.ContainsKey("debug") && settings["debug"] == "true") {
+          this._testThread = new Thread(this.TestRunner);
+          this._testThreadRunning = true;
+          this._testThread.Start();
         }
-        
       } catch(Exception e) {
         Helper.WriteError("Error while Loading Fraunhofer.Fit.Iot.Lora.LoraController.LoraController: " + e.Message + "\n\n" + e.StackTrace);
         throw;
       }
     }
 
-    private void B_Sended(Object sender, SendedData e) => Console.WriteLine("G -> " + e);
-    private void B_Recieved(Object sender, RecievedData e) => Console.WriteLine("G <- " + e);
+    public void Dispose() {
+      if(this._isinit) {
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.Dispose()");
+        this._isinit = false;
+        if(this._testThreadRunning) {
+          this._testThreadRunning = false;
+          while(this._testThread.IsAlive) {
+            Thread.Sleep(10);
+          }
+          this._testThread = null;
+        }
+        this.loraboard.Dispose();
+        this.loraboard = null;
+      }
+    }
 
-    private async void ReceivePacket(Object sender, LoraClientEvent e) => await Task.Run(() => {
+    private void TestRunner() {
+      DateTime start = DateTime.Now;
+      while(this._testThreadRunning) {
+        if((DateTime.Now - start).TotalSeconds > 30) {
+          try {
+            this.loraboard.Send(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"), 0);
+          } catch(Exception e) {
+            Helper.WriteError("Error while Loading Fraunhofer.Fit.Iot.Lora.LoraController.TestRunner: " + e.Message + "\n\n" + e.StackTrace);
+          }
+          start = DateTime.Now;
+        }
+        Thread.Sleep(10);
+      }
+    }
+
+    private void PacketTransmitted(Object sender, TransmittedData e) => this.Transmitted?.Invoke(sender, e);
+
+    private void PacketReceived(Object sender, RecievedData e) => this.Received?.Invoke(sender, e);
+
+    public void Send(Byte[] data, Byte @interface) {
+      if(this._isinit) {
+        this.loraboard.Send(data, @interface);
+      }
+    }
+
+    /*private async void ReceivePacket(Object sender, LoraClientEvent e) => await Task.Run(() => {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.ReceivePacket: " + e.Text.Length.ToString());
       String trackerName = "";
       Byte[] binaryUpdate = { };
@@ -119,29 +155,8 @@ namespace Fraunhofer.Fit.Iot.Lora {
 
     private async void StatusUpdates(Object sender, StatusUpdateEvent e) => await Task.Run(() => this.StatusUpdate?.Invoke(sender, e));
 
-    private async void DataUpdates(Object sender, DataUpdateEvent e) => await Task.Run(() => this.DataUpdate?.Invoke(sender, e));
-    #region IDisposable Support
-    private Boolean disposedValue = false;
+    private async void DataUpdates(Object sender, DataUpdateEvent e) => await Task.Run(() => this.DataUpdate?.Invoke(sender, e));*/
 
-    protected virtual void Dispose(Boolean disposing) {
-      Console.WriteLine("Fraunhofer.Fit.Iot.Lora.LoraController.Dispose(" + disposing + ")");
-      if(!this.disposedValue) {
-        if(disposing) {
-          if(this.loraconnector != null) {
-            this.loraconnector.Update -= this.ReceivePacket;
-            this.loraconnector.End();
-            this.loraconnector.Dispose();
-          }
-        }
-        this.loraconnector = null;
-        this.disposedValue = true;
-      }
-    }
-
-    public void Dispose() {
-      this.Dispose(true);
-      GC.SuppressFinalize(this);
-    }
-    #endregion
+    
   }
 }

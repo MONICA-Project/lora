@@ -1,53 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+
+using BlubbFish.Utils;
+
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
-
-  public class RecievedData {
-    public Byte[] Data { get; set; }
-  }
-
-  public class SendedData {
-    public Byte[] Data { get; set; }
-  }
-
-  public class DragionoRecievedObj : RecievedData {
-    public Double Rssi { get; set; }
-    public Double Snr { get; set; }
-    public Double FreqError { get; set; }
-    public Boolean Crc { get; set; } = true;
-
-    public override String ToString() => "Dragino: RSSI: " + this.Rssi + " dBm, SNR: " + this.Snr + " dB, FError: " + Math.Round(this.FreqError) + " Hz, CRC: " + this.Crc + ", Data: " + BitConverter.ToString(this.Data).Replace("-", " ");
-  }
-
-  public class DragionoSendedObj : SendedData {
-    public Double Datarate { get; set; }
-    public Boolean Msgtolong { get; set; } = false;
-    public Boolean Txtimeout { get; set; } = false;
-    public Int16 Errorcode { get; set; }
-
-    public override String ToString() => "Dragino: Datarate: " + this.Datarate.ToString("F2") + " bps, MsgToLong: " + this.Msgtolong + ", Timeout: " + this.Txtimeout + ", Error: " + this.Errorcode + ", Data: " + BitConverter.ToString(this.Data).Replace("-", " ");
-  }
-
   public abstract class LoraBoard : SpiCom, IDisposable {
     protected Dictionary<String, String> config;
-
-    protected LoraBoard(Dictionary<String, String> settings) => this.config = settings;
-    public abstract void Dispose();
-    public abstract Boolean Begin();
-    //public abstract Boolean End();
-    public abstract Boolean Send(Byte[] data, Byte @interface);
-    public abstract Boolean StartEventRecieving();
-
-    protected async void RaiseRecieveEvent(RecievedData obj) => await Task.Run(() => this.Recieved?.Invoke(this, obj));
-    protected async void RaiseSendedEvent(SendedData obj) => await Task.Run(() => this.Sended?.Invoke(this, obj));
     public delegate void RecieveUpdate(Object sender, RecievedData e);
-    public delegate void SendUpdate(Object sender, SendedData e);
-    public event RecieveUpdate Recieved;
-    public event SendUpdate Sended;
+    public delegate void TransmittedUpdate(Object sender, TransmittedData e);
 
+    #region Constructor and deconstructor
+    protected LoraBoard(Dictionary<String, String> settings) => this.config = settings;
+    public static LoraBoard GetInstance(Dictionary<String, String> settings) {
+      if(settings.Count == 0) {
+        throw new ArgumentException("Missing argument for [lora] in settingsfile");
+      }
+      String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower();
+      try {
+        Type t = Type.GetType(object_sensor, true);
+        return (LoraBoard)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
+      } catch(TypeLoadException) {
+        throw new ArgumentException("Configuration: " + settings["type"] + " is not a LoraBoard");
+      } catch(FileNotFoundException) {
+        throw new Exception("Driver " + object_sensor + " could not load!");
+      }
+
+    }
+    public abstract void Dispose();
+    #endregion
+
+    #region Start
+    public abstract void Begin();
+    #endregion
+
+    #region Send and Recieve
+    public abstract void Send(Byte[] data, Byte @interface);
+    public abstract void StartEventRecieving();
+    #endregion
+
+    #region Events
+    public event RecieveUpdate Recieved;
+    public event TransmittedUpdate Transmitted;
+    #endregion
+
+    #region Protected methods for child classes
     protected void Debug(String text) => Console.WriteLine(text);
+    protected async void RaiseRecieveEvent(RecievedData obj) => await Task.Run(() => this.Recieved?.Invoke(this, obj));
+    protected async void RaiseTransmittedEvent(TransmittedData obj) => await Task.Run(() => this.Transmitted?.Invoke(this, obj));
+    #endregion
   }
 }

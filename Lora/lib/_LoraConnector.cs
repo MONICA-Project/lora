@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+
 using BlubbFish.Utils;
+
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
@@ -16,14 +19,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       if (settings.Count == 0) {
         throw new ArgumentException("Missing argument for [lora] in settingsfile");
       }
-      String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower();
+      String object_sensor = "Fraunhofer.Fit.Iot.Lora.lib." + settings["type"].ToUpperLower() + "." + settings["type"].ToUpperLower();
       try {
         Type t = Type.GetType(object_sensor, true);
         return (LoraConnector)t.GetConstructor(new Type[] { typeof(Dictionary<String, String>) }).Invoke(new Object[] { settings });
       } catch (TypeLoadException) {
         Console.Error.WriteLine("Configuration: " + settings["type"] + " is not a LoraConnector");
         return null;
-      } catch (System.IO.FileNotFoundException) {
+      } catch (FileNotFoundException) {
         Console.Error.WriteLine("Driver " + object_sensor + " could not load!");
         return null;
       }

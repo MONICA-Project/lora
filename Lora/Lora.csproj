@@ -7,12 +7,13 @@
     <Company>Fraunhofer FIT</Company>
     <Authors>BlubbFish</Authors>
     <Product>Lora</Product>
-    <Copyright>Copyright © Fraunhofer FIT, BlubbFish 2018 - 08.07.2019</Copyright>
+    <Copyright>Copyright © Fraunhofer FIT, BlubbFish 2018 - 19.12.2019</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/MONICA-Project/lora</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MONICA-Project/lora.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>1.8.4 Fixing a bug related to threaded working with data
+    <PackageReleaseNotes>2.0.0 The total rewrite
+1.8.4 Fixing a bug related to threaded working with data
 1.8.3 Refactoring and make using threads on event occours
 1.8.2 Bugfix, create also an event for sending normal loradata when update panic
 1.8.1 Add Hostname to MQTT, so you can see from witch device the data is recieved
@@ -28,7 +29,7 @@
 1.2.0 Restructure and remove old code
 1.1.0 Now awaiing Battery as Double and fix the sending twise issue</PackageReleaseNotes>
     <NeutralLanguage>de-DE</NeutralLanguage>
-    <Version>1.8.4</Version>
+    <Version>2.0.0</Version>
     <AssemblyName>Lora</AssemblyName>
     <RootNamespace>Fraunhofer.Fit.Iot.Lora</RootNamespace>
   </PropertyGroup>
