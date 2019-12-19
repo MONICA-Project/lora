@@ -20,12 +20,7 @@ namespace Fraunhofer.Fit.Iot.Lora {
     public event ReceivedEvent Received;
 
     /*private readonly Object lockReceivePacket = new Object();
-    public delegate void UpdateDataEvent(Object sender, DataUpdateEvent e);
-    public delegate void UpdatePanicEvent(Object sender, PanicUpdateEvent e);
-    public delegate void UpdateStatusEvent(Object sender, StatusUpdateEvent e);
-    public event UpdateDataEvent DataUpdate;
-    public event UpdatePanicEvent PanicUpdate;
-    public event UpdateStatusEvent StatusUpdate;
+    
     public Dictionary<String, Tracker> trackers = new Dictionary<String, Tracker>();*/
     
 
