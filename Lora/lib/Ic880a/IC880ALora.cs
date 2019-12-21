@@ -41,7 +41,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
   public partial class Ic880alora : LoraConnector {
     #region Private Variables
     private readonly GpioPin PinSlaveSelect;
-    private readonly GpioPin PinReset;
+    //private readonly GpioPin PinReset;
     private readonly SpiChannel SpiChannel;
     private Thread receiveThread;
     private Boolean ReceiveRunnerAlive;
@@ -72,11 +72,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     private Byte selectedPage;
     private Boolean deviceStarted;
     private Boolean CrcEnabled;
-    
+
     #endregion
     #endregion
 
     #region Registers, Modes, Pa, Irq
+    [Obsolete()]
     public enum BW {
       Undefined = 0,
       BW_500KHZ = 1,
@@ -88,6 +89,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       BW_7K8HZ = 7      
     }
 
+    [Obsolete()]
     public enum SF : Byte {
       Undefined = 0,
       DR_LORA_SF7 = 2,
@@ -99,6 +101,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       DR_LORA_SFMULTI = 126
     }
 
+
+    [Obsolete()]
     public enum CR : Byte {
       Undefined = 0,
       CR_LORA_4_5 = 1,
@@ -107,16 +111,19 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       CR_LORA_4_8 = 4
     }
 
+    [Obsolete()]
     public enum Reciever : Byte {
       Chain0 = 0,
       Chain1 = 1
     }
 
+    [Obsolete()]
     enum RadioType : Byte {
       SX1255 = 0,
       SX1257 = 1
     }
 
+    [Obsolete()]
     public enum RadioDataType : Byte {
       Undefined = 0,
       Lora = 16,
@@ -124,12 +131,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       FSK = 32
     }
 
+    [Obsolete()]
     public enum Modulation : Byte {
       Undefined = 0,
       Lora = 0x10,
       Fsk = 0x20
     }
 
+    [Obsolete()]
     public enum Crc : Byte {
       CrcOk = 0x10,
       CrcBad = 0x11,
@@ -159,14 +168,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     #endregion
 
     #region Constructor
-    public Ic880alora(Dictionary<String, String> settings) : base(settings) {
+    /*public Ic880alora(Dictionary<String, String> settings) : base(settings) {
       Pi.Init<BootstrapWiringPi>();
       this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
       this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);  //Physical pin 24, BCM pin  8, Wiring Pi pin 10 (SPI0 CE0)
       this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);          //Physical pin 29, BCM pin  5, Wiring Pi pin 21 (GPCLK1)
-    }
+    }*/
 
-    public override Boolean Begin() {
+    /*public override Boolean Begin() {
       this.SetupIO();
       this.Reset();
       if (this.RegisterRead(Registers.VERSION) != Registers.VERSION.DefaultValue) {
@@ -177,22 +186,22 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
       this.receiveThread = new Thread(this.ReceiveRunner);
       return true;
-    }
+    }*/
 
-    public override void End() {
+    /*public override void End() {
       this.deviceStarted = false;
       _ = this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
-    }
+    }*/
 
-    public override void Dispose() {
+    /*public override void Dispose() {
       this.ReceiveRunnerAlive = false;
       while(this.receiveThread.IsAlive) {
         Thread.Sleep(10);
       }
       this.receiveThread = null;
-    }
+    }*/
 
-    public override Boolean StartRadio() {
+    /*public override Boolean StartRadio() {
       _ = this.RegisterWrite(Registers.GLOBAL_EN, 0); //gate clocks
       _ = this.RegisterWrite(Registers.CLK32M_EN, 0);
 
@@ -206,50 +215,50 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.Sx125xSetup(0, 1, this.radioEnabled[0], RadioType.SX1257, this.radioFrequency[0]);
       _ = this.Sx125xSetup(1, 1, this.radioEnabled[1], RadioType.SX1257, this.radioFrequency[1]);
 
-      _ = this.RegisterWrite(Registers.GPIO_MODE, 31); /* gives AGC control of GPIOs to enable Tx external digital filter */
-      _ = this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); /* Set all GPIOs as output */
+      _ = this.RegisterWrite(Registers.GPIO_MODE, 31); // gives AGC control of GPIOs to enable Tx external digital filter 
+      _ = this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); // Set all GPIOs as output 
 
       //TODO Lib part for LBT (Listen before Talk)
 
-      _ = this.RegisterWrite(Registers.GLOBAL_EN, 1); /* Enable clocks */
+      _ = this.RegisterWrite(Registers.GLOBAL_EN, 1); // Enable clocks 
       _ = this.RegisterWrite(Registers.CLK32M_EN, 1);
 
-      Byte cal_cmd = 0; /* select calibration command */
-      cal_cmd |= this.radioEnabled[0] ? (Byte)0x01 : (Byte)0x00; /* Bit 0: Calibrate Rx IQ mismatch compensation on radio A */
-      cal_cmd |= this.radioEnabled[1] ? (Byte)0x02 : (Byte)0x00; /* Bit 1: Calibrate Rx IQ mismatch compensation on radio B */
-      cal_cmd |= (this.radioEnabled[0] && this.radioEnableTx[0]) ? (Byte)0x04 : (Byte)0x00; /* Bit 2: Calibrate Tx DC offset on radio A */
-      cal_cmd |= (this.radioEnabled[1] && this.radioEnableTx[1]) ? (Byte)0x08 : (Byte)0x00; /* Bit 3: Calibrate Tx DC offset on radio B */
-      cal_cmd |= 0x10; /* Bit 4: 0: calibrate with DAC gain=2, 1: with DAC gain=3 (use 3) */
+      Byte cal_cmd = 0; // select calibration command 
+      cal_cmd |= this.radioEnabled[0] ? (Byte)0x01 : (Byte)0x00; // Bit 0: Calibrate Rx IQ mismatch compensation on radio A
+      cal_cmd |= this.radioEnabled[1] ? (Byte)0x02 : (Byte)0x00; // Bit 1: Calibrate Rx IQ mismatch compensation on radio B
+      cal_cmd |= (this.radioEnabled[0] && this.radioEnableTx[0]) ? (Byte)0x04 : (Byte)0x00; // Bit 2: Calibrate Tx DC offset on radio A 
+      cal_cmd |= (this.radioEnabled[1] && this.radioEnableTx[1]) ? (Byte)0x08 : (Byte)0x00; // Bit 3: Calibrate Tx DC offset on radio B 
+      cal_cmd |= 0x10; // Bit 4: 0: calibrate with DAC gain=2, 1: with DAC gain=3 (use 3) 
 
-      //switch (this.rf_radio_type[0]) { /* we assume that there is only one radio type on the board */
+      //switch (this.rf_radio_type[0]) { // we assume that there is only one radio type on the board 
       //  case RadioType.SX1255: //LGW_RADIO_TYPE_SX1255:
-      //    cal_cmd |= 0x20; /* Bit 5: 0: SX1257, 1: SX1255 */
+      //    cal_cmd |= 0x20; // Bit 5: 0: SX1257, 1: SX1255 
       //    break;
       //  case RadioType.SX1257: //LGW_RADIO_TYPE_SX1257:
-          cal_cmd |= 0x00; /* Bit 5: 0: SX1257, 1: SX1255 */
+          cal_cmd |= 0x00; // Bit 5: 0: SX1257, 1: SX1255 
       //    break;
       //}
 
-      cal_cmd |= 0x00; /* Bit 6-7: Board type 0: ref, 1: FPGA, 3: board X */
-      UInt16 cal_time = 2300; /* measured between 2.1 and 2.2 sec, because 1 TX only */
+      cal_cmd |= 0x00; // Bit 6-7: Board type 0: ref, 1: FPGA, 3: board X 
+      UInt16 cal_time = 2300; // measured between 2.1 and 2.2 sec, because 1 TX only 
 
-      _ = this.LoadFirmware(Firmware.CAL); /* Load the calibration firmware  */
-      _ = this.RegisterWrite(Registers.FORCE_HOST_RADIO_CTRL, 0); /* gives to AGC MCU the control of the radios */
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, cal_cmd); /* send calibration configuration word */
+      _ = this.LoadFirmware(Firmware.CAL); // Load the calibration firmware  
+      _ = this.RegisterWrite(Registers.FORCE_HOST_RADIO_CTRL, 0); // gives to AGC MCU the control of the radios 
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, cal_cmd); // send calibration configuration word 
       _ = this.RegisterWrite(Registers.MCU_RST_1, 0);
 
-      _ = this.RegisterWrite(Registers.DBG_AGC_MCU_RAM_ADDR, Firmware.CAL.Address); /* Check firmware version */
+      _ = this.RegisterWrite(Registers.DBG_AGC_MCU_RAM_ADDR, Firmware.CAL.Address); // Check firmware version 
       Int32 fw_version = this.RegisterRead(Registers.DBG_AGC_MCU_RAM_DATA);
       if (fw_version != Firmware.CAL.Version) {
         throw new Exception("ERROR: Version of calibration firmware not expected, actual: " + fw_version + " expected: " + Firmware.CAL.Version);
       }
 
-      _ = this.RegisterWrite(Registers.PAGE_REG, 3); /* Calibration will start on this condition as soon as MCU can talk to concentrator registers */
-      _ = this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 0); /* Give control of concentrator registers to MCU */
+      _ = this.RegisterWrite(Registers.PAGE_REG, 3); // Calibration will start on this condition as soon as MCU can talk to concentrator registers 
+      _ = this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 0); // Give control of concentrator registers to MCU 
 
-      //Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); /* Wait for calibration to end */
-      Thread.Sleep(cal_time); /* Wait for end of calibration */
-      _ = this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 1); /* Take back control */
+      //Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); // Wait for calibration to end 
+      Thread.Sleep(cal_time); // Wait for end of calibration 
+      _ = this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 1); // Take back control 
 
       Int32 cal_status = this.RegisterRead(Registers.MCU_AGC_STATUS);
       if ((cal_status & 0x81) != 0x81) {  //bit 0: could access SX1301 registers
@@ -276,7 +285,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         throw new Exception("WARNING: problem in calibration of radio B for TX DC offset\n");
       }
 
-      for (Byte i = 0; i <= 7; ++i) { /* Get TX DC offset values */
+      for (Byte i = 0; i <= 7; ++i) { // Get TX DC offset values 
         _ = this.RegisterWrite(Registers.DBG_AGC_MCU_RAM_ADDR, 0xA0 + i);
         Int32 read_val = this.RegisterRead(Registers.DBG_AGC_MCU_RAM_DATA);
         this.cal_offset_a_i[i] = (SByte)read_val;
@@ -291,44 +300,44 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         this.cal_offset_b_q[i] = (SByte)read_val;
       }
 
-      this.LoadAdjustConstants(); /* load adjusted parameters */
+      this.LoadAdjustConstants(); // load adjusted parameters 
 
-      if (this.radioFrequency[0] == 0) { /* Sanity check for RX frequency */
+      if (this.radioFrequency[0] == 0) { // Sanity check for RX frequency 
         throw new Exception("ERROR: wrong configuration, rf_rx_freq[0] is not set\n");
       }
 
-      UInt32 x = 4096000000 / (this.radioFrequency[0] >> 1); /* Freq-to-time-drift calculation */ /* dividend: (4*2048*1000000) >> 1, rescaled to avoid 32b overflow */
-      x = (x > 63) ? 63 : x; /* saturation */
-      _ = this.RegisterWrite(Registers.FREQ_TO_TIME_DRIFT, (Int32)x); /* default 9 */
+      UInt32 x = 4096000000 / (this.radioFrequency[0] >> 1); // Freq-to-time-drift calculation  dividend: (4*2048*1000000) >> 1, rescaled to avoid 32b overflow 
+      x = (x > 63) ? 63 : x; // saturation 
+      _ = this.RegisterWrite(Registers.FREQ_TO_TIME_DRIFT, (Int32)x); // default 9 
 
-      x = 4096000000 / (this.radioFrequency[0] >> 3); /* dividend: (16*2048*1000000) >> 3, rescaled to avoid 32b overflow */
-      x = (x > 63) ? 63 : x; /* saturation */
-      _ = this.RegisterWrite(Registers.MBWSSF_FREQ_TO_TIME_DRIFT, (Int32)x); /* default 36 */
+      x = 4096000000 / (this.radioFrequency[0] >> 3); // dividend: (16*2048*1000000) >> 3, rescaled to avoid 32b overflow 
+      x = (x > 63) ? 63 : x; // saturation 
+      _ = this.RegisterWrite(Registers.MBWSSF_FREQ_TO_TIME_DRIFT, (Int32)x); // default 36 
 
-      _ = this.RegisterWrite(Registers.IF_FREQ_0, (this.interfaceFrequency[0] << 5) / 15625); /* default -384 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_1, (this.interfaceFrequency[1] << 5) / 15625); /* default -128 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_2, (this.interfaceFrequency[2] << 5) / 15625); /* default 128 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_3, (this.interfaceFrequency[3] << 5) / 15625); /* default 384 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_4, (this.interfaceFrequency[4] << 5) / 15625); /* default -384 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_5, (this.interfaceFrequency[5] << 5) / 15625); /* default -128 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_6, (this.interfaceFrequency[6] << 5) / 15625); /* default 128 */
-      _ = this.RegisterWrite(Registers.IF_FREQ_7, (this.interfaceFrequency[7] << 5) / 15625); /* default 384 */
+      _ = this.RegisterWrite(Registers.IF_FREQ_0, (this.interfaceFrequency[0] << 5) / 15625); // default -384 
+      _ = this.RegisterWrite(Registers.IF_FREQ_1, (this.interfaceFrequency[1] << 5) / 15625); // default -128 
+      _ = this.RegisterWrite(Registers.IF_FREQ_2, (this.interfaceFrequency[2] << 5) / 15625); // default 128 
+      _ = this.RegisterWrite(Registers.IF_FREQ_3, (this.interfaceFrequency[3] << 5) / 15625); // default 384 
+      _ = this.RegisterWrite(Registers.IF_FREQ_4, (this.interfaceFrequency[4] << 5) / 15625); // default -384 
+      _ = this.RegisterWrite(Registers.IF_FREQ_5, (this.interfaceFrequency[5] << 5) / 15625); // default -128 
+      _ = this.RegisterWrite(Registers.IF_FREQ_6, (this.interfaceFrequency[6] << 5) / 15625); // default 128 
+      _ = this.RegisterWrite(Registers.IF_FREQ_7, (this.interfaceFrequency[7] << 5) / 15625); // default 384 
 
-      _ = this.RegisterWrite(Registers.CORR0_DETECT_EN, this.interfaceEnabled[0] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR1_DETECT_EN, this.interfaceEnabled[1] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR2_DETECT_EN, this.interfaceEnabled[2] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR3_DETECT_EN, this.interfaceEnabled[3] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR4_DETECT_EN, this.interfaceEnabled[4] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR5_DETECT_EN, this.interfaceEnabled[5] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR6_DETECT_EN, this.interfaceEnabled[6] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
-      _ = this.RegisterWrite(Registers.CORR7_DETECT_EN, this.interfaceEnabled[7] ? (Byte)SF.DR_LORA_SFMULTI : 0); /* default 0 */
+      _ = this.RegisterWrite(Registers.CORR0_DETECT_EN, this.interfaceEnabled[0] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR1_DETECT_EN, this.interfaceEnabled[1] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR2_DETECT_EN, this.interfaceEnabled[2] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR3_DETECT_EN, this.interfaceEnabled[3] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR4_DETECT_EN, this.interfaceEnabled[4] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR5_DETECT_EN, this.interfaceEnabled[5] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
+      _ = this.RegisterWrite(Registers.CORR6_DETECT_EN, this.interfaceEnabled[6] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0
+      _ = this.RegisterWrite(Registers.CORR7_DETECT_EN, this.interfaceEnabled[7] ? (Byte)SF.DR_LORA_SFMULTI : 0); // default 0 
 
-      _ = this.RegisterWrite(Registers.PPM_OFFSET, 0x60); /* as the threshold is 16ms, use 0x60 to enable ppm_offset for SF12 and SF11 @125kHz*/
+      _ = this.RegisterWrite(Registers.PPM_OFFSET, 0x60); // as the threshold is 16ms, use 0x60 to enable ppm_offset for SF12 and SF11 @125kHz
 
-      _ = this.RegisterWrite(Registers.CONCENTRATOR_MODEM_ENABLE, 1); /* default 0 */
+      _ = this.RegisterWrite(Registers.CONCENTRATOR_MODEM_ENABLE, 1); // default 0 
 
 
-      _ = this.RegisterWrite(Registers.IF_FREQ_8, (this.interfaceFrequency[8] << 5) / 15625); /* configure LoRa 'stand-alone' modem (IF8) */ /* MBWSSF modem (default 0) */
+      _ = this.RegisterWrite(Registers.IF_FREQ_8, (this.interfaceFrequency[8] << 5) / 15625); // configure LoRa 'stand-alone' modem (IF8)  MBWSSF modem (default 0) 
       if (this.interfaceEnabled[8] == true) {
         _ = this.RegisterWrite(Registers.MBWSSF_RADIO_SELECT, (Byte)this.interfaceChain[8]);
         switch (this.loraBandwidth) {
@@ -353,13 +362,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           case SF.DR_LORA_SF12:
             _ = this.RegisterWrite(Registers.MBWSSF_RATE_SF, 12); break;
         }
-        _ = this.RegisterWrite(Registers.MBWSSF_PPM_OFFSET, this.loraBandwidth == BW.BW_125KHZ && (this.loraSpreadingFactor == SF.DR_LORA_SF11 || this.loraSpreadingFactor == SF.DR_LORA_SF12) || this.loraBandwidth == BW.BW_250KHZ && this.loraSpreadingFactor == SF.DR_LORA_SF12 ? 1 : 0); /* default 0 */
-        _ = this.RegisterWrite(Registers.MBWSSF_MODEM_ENABLE, 1); /* default 0 */
+        _ = this.RegisterWrite(Registers.MBWSSF_PPM_OFFSET, this.loraBandwidth == BW.BW_125KHZ && (this.loraSpreadingFactor == SF.DR_LORA_SF11 || this.loraSpreadingFactor == SF.DR_LORA_SF12) || this.loraBandwidth == BW.BW_250KHZ && this.loraSpreadingFactor == SF.DR_LORA_SF12 ? 1 : 0); // default 0 
+        _ = this.RegisterWrite(Registers.MBWSSF_MODEM_ENABLE, 1); // default 0 
       } else {
         _ = this.RegisterWrite(Registers.MBWSSF_MODEM_ENABLE, 0);
       }
 
-      _ = this.RegisterWrite(Registers.IF_FREQ_9, (this.interfaceFrequency[9] << 5) / 15625);/* configure FSK modem (IF9) */ /* FSK modem, default 0 */
+      _ = this.RegisterWrite(Registers.IF_FREQ_9, (this.interfaceFrequency[9] << 5) / 15625);// configure FSK modem (IF9) FSK modem, default 0 
       _ = this.RegisterWrite(Registers.FSK_PSIZE, this.fskSyncWordSize - 1);
       _ = this.RegisterWrite(Registers.FSK_TX_PSIZE, this.fskSyncWordSize - 1);
       UInt64 fsk_sync_word_reg = this.fskSyncWord << (8 * (8 - this.fskSyncWordSize));
@@ -367,25 +376,25 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.RegisterWrite(Registers.FSK_REF_PATTERN_MSB, (Int32)(UInt32)(0xFFFFFFFF & (fsk_sync_word_reg >> 32)));
       if (this.interfaceEnabled[9] == true) {
         _ = this.RegisterWrite(Registers.FSK_RADIO_SELECT, (Byte)this.interfaceChain[9]);
-        _ = this.RegisterWrite(Registers.FSK_BR_RATIO, (Int32)(32000000 / this.fskDatarate)); /* setting the dividing ratio for datarate */
+        _ = this.RegisterWrite(Registers.FSK_BR_RATIO, (Int32)(32000000 / this.fskDatarate)); // setting the dividing ratio for datarate 
         _ = this.RegisterWrite(Registers.FSK_CH_BW_EXPO, (Byte)this.fskBandwidth);
-        _ = this.RegisterWrite(Registers.FSK_MODEM_ENABLE, 1); /* default 0 */
+        _ = this.RegisterWrite(Registers.FSK_MODEM_ENABLE, 1); // default 0 
       } else {
         _ = this.RegisterWrite(Registers.FSK_MODEM_ENABLE, 0);
       }
 
-      _ = this.LoadFirmware(Firmware.ARB); /* Load firmware */
+      _ = this.LoadFirmware(Firmware.ARB); // Load firmware 
       _ = this.LoadFirmware(Firmware.AGC);
 
-      _ = this.RegisterWrite(Registers.FORCE_HOST_RADIO_CTRL, 0); /* gives the AGC MCU control over radio, RF front-end and filter gain */
+      _ = this.RegisterWrite(Registers.FORCE_HOST_RADIO_CTRL, 0); // gives the AGC MCU control over radio, RF front-end and filter gain 
       _ = this.RegisterWrite(Registers.FORCE_HOST_FE_CTRL, 0);
       _ = this.RegisterWrite(Registers.FORCE_DEC_FILTER_GAIN, 0);
 
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, 0); /* Get MCUs out of reset */ /* MUST not be = to 1 or 2 at firmware init */
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, 0); // Get MCUs out of reset */ /* MUST not be = to 1 or 2 at firmware init 
       _ = this.RegisterWrite(Registers.MCU_RST_0, 0);
       _ = this.RegisterWrite(Registers.MCU_RST_1, 0);
 
-      _ = this.RegisterWrite(Registers.DBG_AGC_MCU_RAM_ADDR, Firmware.AGC.Address); /* Check firmware version */
+      _ = this.RegisterWrite(Registers.DBG_AGC_MCU_RAM_ADDR, Firmware.AGC.Address); // Check firmware version 
       fw_version = this.RegisterRead(Registers.DBG_AGC_MCU_RAM_DATA);
       if (fw_version != Firmware.AGC.Version) {
         throw new Exception("ERROR: Version of AGC firmware not expected, actual: " + fw_version + " expected: " + Firmware.AGC.Version);
@@ -404,8 +413,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         throw new Exception("ERROR: AGC FIRMWARE INITIALIZATION FAILURE, STATUS " + status.ToString("X2"));
       }
 
-      for (Byte i = 0; i < Txgain_lut.size; ++i) { /* Update Tx gain LUT and start AGC */
-        _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); /* start a transaction */
+      for (Byte i = 0; i < Txgain_lut.size; ++i) { // Update Tx gain LUT and start AGC 
+        _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); // start a transaction 
         Thread.Sleep(1);
         _ = this.RegisterWrite(Registers.RADIO_SELECT, Txgain_lut.lut[i].mix_gain + 16 * Txgain_lut.lut[i].dac_gain + 64 * Txgain_lut.lut[i].pa_gain);
         Thread.Sleep(1);
@@ -415,7 +424,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         }
       }
 
-      if (Txgain_lut.size < 16) { /* As the AGC fw is waiting for 16 entries, we need to abort the transaction if we get less entries */
+      if (Txgain_lut.size < 16) { // As the AGC fw is waiting for 16 entries, we need to abort the transaction if we get less entries 
         _ = this.RegisterWrite(Registers.RADIO_SELECT, 16);
         Thread.Sleep(1);
         _ = this.RegisterWrite(Registers.RADIO_SELECT, 17);
@@ -427,7 +436,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
 
 
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); /* Load Tx freq MSBs (always 3 if f > 768 for SX1257 or f > 384 for SX1255 */
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); // Load Tx freq MSBs (always 3 if f > 768 for SX1257 or f > 384 for SX1255 
       Thread.Sleep(1);
       _ = this.RegisterWrite(Registers.RADIO_SELECT, 3);
       Thread.Sleep(1);
@@ -437,7 +446,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
 
 
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); /* Load chan_select firmware option */
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); // Load chan_select firmware option 
       Thread.Sleep(1);
       _ = this.RegisterWrite(Registers.RADIO_SELECT, 0);
       Thread.Sleep(1);
@@ -446,14 +455,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         throw new Exception("ERROR: AGC FIRMWARE INITIALIZATION FAILURE, STATUS " + status.ToString("X2"));
       }
 
-      Byte radio_select = 0; /* IF mapping to radio A/B (per bit, 0=A, 1=B) */
-      for (Byte i = 0; i < 8; ++i) { /* configure LoRa 'multi' demodulators aka. LoRa 'sensor' channels (IF0-3) */
-        radio_select += (Byte)(this.interfaceChain[i] == Reciever.Chain1 ? 1 << i : 0); /* transform bool array into binary word */
+      Byte radio_select = 0; // IF mapping to radio A/B (per bit, 0=A, 1=B) 
+      for (Byte i = 0; i < 8; ++i) { // configure LoRa 'multi' demodulators aka. LoRa 'sensor' channels (IF0-3) 
+        radio_select += (Byte)(this.interfaceChain[i] == Reciever.Chain1 ? 1 << i : 0); // transform bool array into binary word 
       }
 
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); /* End AGC firmware init and check status */
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, 16); // End AGC firmware init and check status 
       Thread.Sleep(1);
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, radio_select); /* Load intended value of RADIO_SELECT */
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, radio_select); // Load intended value of RADIO_SELECT 
       Thread.Sleep(1);
       //Console.WriteLine("Info: putting back original RADIO_SELECT value");
       status = this.RegisterRead(Registers.MCU_AGC_STATUS);
@@ -462,18 +471,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
 
 
-      _ = this.RegisterWrite(Registers.GPS_EN, 1); /* enable GPS event capture */
+      _ = this.RegisterWrite(Registers.GPS_EN, 1); // enable GPS event capture 
 
       //TODO Lib part for LBT (Listen before Talk)
-      /* 
-      if (this.Lbt_is_enabled() == true) {
-        printf("INFO: Configuring LBT, this may take few seconds, please wait...\n");
-        wait_ms(8400);
-      }*/
+       
+      //if (this.Lbt_is_enabled() == true) {
+      //  printf("INFO: Configuring LBT, this may take few seconds, please wait...\n");
+      //  wait_ms(8400);
+      //}
 
       this.deviceStarted = true;
       return true;
-    }
+    }*/
 
     public override void ParseConfig() {
       try {
@@ -505,13 +514,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     public override Boolean EndPacket(Boolean async = false) => throw new NotImplementedException();
     public override Byte Write(Byte[] buffer) => throw new NotImplementedException();
 
-    public override void Receive(Byte size) {
+    /*public override void Receive(Byte size) {
       Byte[] recieveregister = this.RegisterReadArray(Registers.RX_PACKET_DATA_FIFO_NUM_STORED, 5);
       if (recieveregister[0] > 0 && recieveregister[0] <= 16) {
-        /* 0:   number of packets available in RX data buffer */
-        /* 1,2: start address of the current packet in RX data buffer */
-        /* 3:   CRC status of the current packet */
-        /* 4:   size of the current packet payload in byte */
+        // 0:   number of packets available in RX data buffer 
+        // 1,2: start address of the current packet in RX data buffer 
+        /7 3:   CRC status of the current packet 
+        /7 4:   size of the current packet payload in byte 
         //Console.WriteLine("FIFO content: " + recieveregister[0] + " " + recieveregister[1] + " " + recieveregister[2] + " " + recieveregister[3] + " " + recieveregister[4]);
 
         IC880ADataFrame p = new IC880ADataFrame {
@@ -610,13 +619,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
               break;
           }
 
-          /* determine if 'PPM mode' is on, needed for timestamp correction */
+          // determine if 'PPM mode' is on, needed for timestamp correction 
           Boolean ppm = p.bandwidth == BW.BW_125KHZ && (p.spreadingfactor == SF.DR_LORA_SF11 || p.spreadingfactor == SF.DR_LORA_SF12) || p.bandwidth == BW.BW_250KHZ && p.spreadingfactor == SF.DR_LORA_SF12;
 
           UInt32 delay_x = 0;
           UInt32 bw_pow = 0;
-          /* timestamp correction code, base delay */
-          if (ifmod == RadioDataType.Lora) { /* if packet was received on the stand-alone LoRa modem */
+          // timestamp correction code, base delay 
+          if (ifmod == RadioDataType.Lora) { // if packet was received on the stand-alone LoRa modem 
             switch (this.loraBandwidth) {
               case BW.BW_125KHZ:
                 delay_x = 64;
@@ -631,16 +640,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
                 bw_pow = 4;
                 break;
             }
-          } else { /* packet was received on one of the sensor channels = 125kHz */
+          } else { // packet was received on one of the sensor channels = 125kHz 
             delay_x = 114;
             bw_pow = 1;
           }
 
-          /* timestamp correction code, variable delay */
+          // timestamp correction code, variable delay 
           if(sf >= 6 && sf <= 12 && bw_pow > 0) {
             UInt32 delay_y;
             UInt32 delay_z;
-            if(2 * (sz + 2 * (crc_en ? 1 : 0)) - (sf - 7) <= 0) { /* payload fits entirely in first 8 symbols */
+            if(2 * (sz + 2 * (crc_en ? 1 : 0)) - (sf - 7) <= 0) { // payload fits entirely in first 8 symbols 
               delay_y = (UInt32)(((1 << ((Int32)sf - 1)) * (sf + 1) + 3 * (1 << ((Int32)sf - 4))) / bw_pow);
               delay_z = (UInt32)(32 * (2 * (sz + 2 * (crc_en ? 1 : 0)) + 5) / bw_pow);
             } else {
@@ -653,7 +662,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
             Helper.WriteError("WARNING: invalid packet, no timestamp correction");
           }
 
-          /* RSSI correction */
+          // RSSI correction 
           if (ifmod == RadioDataType.LoraMulti) {
             p.rssi -= -35;
           }
@@ -681,7 +690,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           p.coderate = CR.Undefined;
           timestamp_correction = 680000 / this.fskDatarate - 20;
 
-          /* RSSI correction */
+          // RSSI correction 
           p.rssi = (Single)(60 + 1.5351 * p.rssi + 0.003 * Math.Pow(p.rssi, 2));
         } else {
           Helper.WriteError("ERROR: UNEXPECTED PACKET ORIGIN");
@@ -708,11 +717,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         _ = this.RegisterWrite(Registers.RX_PACKET_DATA_FIFO_NUM_STORED, 0);
       }
 
-    }
+    }*/
     #endregion
 
     #region RadioSettings
-    public void SetInterfaceFrequency(Int32 offset, Byte @interface) {
+    private void SetInterfaceFrequency(Int32 offset, Byte @interface) {
       if (@interface >= 0 && @interface <= 9) {
         if(offset >= -500000 && offset <= 500000) {
           this.interfaceFrequency[@interface] = offset;
@@ -724,7 +733,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
 
-    public void SetInterfaceChain(Byte chain, Byte @interface) {
+    private void SetInterfaceChain(Byte chain, Byte @interface) {
       if (@interface >= 0 && @interface <= 9) {
         if (chain == 0) {
           this.interfaceChain[@interface] = Reciever.Chain0;
@@ -738,7 +747,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
 
-    public void SetInterfaceEnable(Boolean enable, Byte @interface) {
+    private void SetInterfaceEnable(Boolean enable, Byte @interface) {
       if (@interface >= 0 && @interface <= 9) {
         this.interfaceEnabled[@interface] = enable;
       } else {
@@ -746,7 +755,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
 
-    public void SetFrequency(UInt32 freq, Byte chain) {
+    private void SetFrequency(UInt32 freq, Byte chain) {
       if (chain >= 0 && chain <= 1) {
         this.radioFrequency[chain] = freq;
         this.radioEnabled[chain] = true;
@@ -755,16 +764,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
 
-    public void SetSpreadingFactor(Byte sf) => this.loraSpreadingFactor = sf <= 7 ? SF.DR_LORA_SF7
+    private void SetSpreadingFactor(Byte sf) => this.loraSpreadingFactor = sf <= 7 ? SF.DR_LORA_SF7
       : sf <= 8 ? SF.DR_LORA_SF8
       : sf <= 9 ? SF.DR_LORA_SF9 
       : sf <= 10 ? SF.DR_LORA_SF10 
       : sf <= 11 ? SF.DR_LORA_SF11 
       : SF.DR_LORA_SF12;
 
-    public void SetDatarate(UInt32 dr) => this.fskDatarate = dr;
+    private void SetDatarate(UInt32 dr) => this.fskDatarate = dr;
 
-    public void SetSignalBandwith(Int64 sbw, RadioDataType @interface) {
+    private void SetSignalBandwith(Int64 sbw, RadioDataType @interface) {
       BW bw = sbw <= 7800 ? BW.BW_7K8HZ
         : sbw <= 15600 ? BW.BW_15K6HZ
         : sbw <= 31250 ? BW.BW_31K2HZ
@@ -779,9 +788,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
     }
 
-    public void EnableCrc() => this.CrcEnabled = true;
+    private void EnableCrc() => this.CrcEnabled = true;
 
-    public void DisableCrc() => this.CrcEnabled = false;
+    private void DisableCrc() => this.CrcEnabled = false;
     #endregion
 
     #region Powserusage
@@ -789,6 +798,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     #endregion
 
     #region Register Communication
+    [Obsolete()]
     private Int32 RegisterRead(LGWRegisters register) {
       if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) {
         this.PageSwitch((Byte)register.RegisterPage);
@@ -823,14 +833,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         return 0;
       }
     }
-
+    [Obsolete()]
     private Byte[] RegisterReadArray(LGWRegisters register, UInt16 size) {
       if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) { /* select proper register page if needed */
         this.PageSwitch((Byte)register.RegisterPage);
       }
       return this.MultiSPI((Byte)(0x00 | (register.Address & 0x7F)), new Byte[size], size);
     }
-
+    [Obsolete()]
     private Boolean RegisterWrite(LGWRegisters register, Int32 value) {
       if (register.Equals(Registers.PAGE_REG)) {
         this.PageSwitch((Byte)value);
@@ -880,7 +890,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.MultiSPI((Byte)(0x80 | (register.Address & 0x7F)), value, size); /* do the burst write */
       return true;
     }
-
+    [Obsolete()]
     private void PageSwitch(Byte targetPage) {
       this.selectedPage = (Byte)(0x03 & targetPage);
       _ = this.SingleSPI((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this.selectedPage);
@@ -1157,7 +1167,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
                                                    // lgw_reg_w(LGW_FSK_TX_PREAMBLE_SEQ,0); /* default 0 */
     }
 
-    private void ReceiveRunner() {
+    /*private void ReceiveRunner() {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880alora.ReceiveRunner(): gestartet!");
       while (this.ReceiveRunnerAlive) {
         if (this.deviceStarted) {
@@ -1165,11 +1175,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           Thread.Sleep(1);
         }
       }
-    }
+    }*/
     #endregion
 
     #region Hardware IO
-    private void Reset() {
+    /*private void Reset() {
       this.PinReset.Write(true);
       Thread.Sleep(150);
       this.PinReset.Write(false);
@@ -1183,13 +1193,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.SingleSPI(0, 128);
       _ = this.SingleSPI(0, 0);
       //this.PinReset.PinMode = GpioPinDriveMode.Input;
-    }
+    }*/
 
-    private void SetupIO() {
+    /*private void SetupIO() {
       Pi.Spi.SetProperty(this.config["spichan"] + "Frequency", 100000.ToString());
       this.PinSlaveSelect.PinMode = GpioPinDriveMode.Output;
       this.PinReset.PinMode = GpioPinDriveMode.Output;
-    }
+    }*/
 
     private void Selectreceiver() => this.PinSlaveSelect.Write(false);
 

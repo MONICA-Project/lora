@@ -3,7 +3,7 @@ using Fraunhofer.Fit.Iot.Lora.lib;
 using static Fraunhofer.Fit.Iot.Lora.lib.Ic880alora;
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {
-  public struct IC880ADataFrame {
+  /*public struct IC880ADataFrame {
     public Modulation modulation;
     public Byte size;
     public Double rssi;
@@ -123,5 +123,5 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
       BW.BW_500KHZ => 500000,
       _ => 0,
     };
-  }
+  }*/
 }

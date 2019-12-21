@@ -36,7 +36,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     protected Byte SPIreadRegister(Byte address) => this.MultiSPI(SPICommands.Read, address, null, 1)[0];
 
-    protected void SPIwriteRegister(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, address, new Byte[] { data }, 1);
+    protected void SPIwriteRegister(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), new Byte[] { data }, 1);
+
+    protected void SPIwriteRegisterRaw(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, address, new Byte[] { data }, 1);
 
     protected Int16 SPIgetRegValue(Byte address, Byte msb = 7, Byte lsb = 0) {
       if(msb > 7 || lsb > 7 || lsb > msb) {
@@ -72,13 +74,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       return Errorcodes.ERR_SPI_WRITE_FAILED;
     }
 
-    protected Byte[] SPIreadRegisterBurst(Byte address, Byte numBytes) => this.MultiSPI(SPICommands.Read, address, new Byte[] { }, numBytes);
+    protected Byte[] SPIreadRegisterBurst(Byte address, UInt16 numBytes) => this.MultiSPI(SPICommands.Read, address, new Byte[] { }, numBytes);
 
-    protected void SPIwriteRegisterBurst(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, address, data, (UInt16)data.Length);
+    protected void SPIwriteRegisterBurst(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), data, (UInt16)data.Length);
 
     private Byte[] MultiSPI(Byte cmd, Byte address, Byte[] value, UInt16 size) {
       Byte[] tx = new Byte[size + 1];
-      tx[0] = (Byte)(address | cmd);
+      tx[0] = address;
       if(cmd == SPICommands.Write) {
         for(UInt16 i = 0; i < size; i++) {
           tx[i + 1] = value[i];

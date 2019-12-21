@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-
+using BlubbFish.Utils;
 using Fraunhofer.Fit.Iot.Lora.Events;
 
 using Unosquare.RaspberryIO;
@@ -998,7 +998,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
         this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
         this.PinReset.PinMode = GpioPinDriveMode.Output;
         this.PinChipSelect.Write(GpioPinValue.High);
-        Pi.Spi.Channel0Frequency = 250000;
+        Pi.Spi.SetProperty("Channel" + this.SpiChannel.Channel.ToString() + "Frequency", 250000.ToString());
       }
       // select GPIO
       if(gpio == RadioLibTypes.RADIOLIB_INT_0) {

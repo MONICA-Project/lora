@@ -1,8 +1,61 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using BlubbFish.Utils;
 
-namespace Fraunhofer.Fit.Iot.Lora.lib {
-  public partial class Ic880alora {
-    [Obsolete()]
+namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
+  public partial class Ic880a {
+    public struct LGWRegisters {
+      /// <summary>
+      /// page containing the register (-1 for all pages)
+      /// </summary>
+      public SByte RegisterPage;
+      /// <summary>
+      /// base address of the register (7 bit)
+      /// </summary>
+      public Byte Address;
+      /// <summary>
+      /// position of the register LSB (between 0 to 7)
+      /// </summary>
+      public Byte BitOffset;
+      /// <summary>
+      /// indicates the register is signed (2 complem.)
+      /// </summary>
+      public Boolean SignedInt;
+      /// <summary>
+      /// number of bits in the register
+      /// </summary>
+      public Byte SizeInBits;
+      /// <summary>
+      /// indicates a read-only register
+      /// </summary>
+      public Boolean ReadonlyRegister;
+      /// <summary>
+      /// register default value
+      /// </summary>
+      public Int32 DefaultValue;
+      /// <summary>
+      /// A Register of SX3101
+      /// </summary>
+      /// <param name="registerPage">page containing the register (-1 for all pages)</param>
+      /// <param name="address">base address of the register (7 bit)</param>
+      /// <param name="bitOffset">position of the register LSB (between 0 to 7)</param>
+      /// <param name="signedInt">indicates the register is signed (2 complem.)</param>
+      /// <param name="sizeInBits">number of bits in the register</param>
+      /// <param name="readonlyRegister">indicates a read-only register</param>
+      /// <param name="defaultValue">register default value</param>
+      public LGWRegisters(SByte registerPage, Byte address, Byte bitOffset, Boolean signedInt, Byte sizeInBits, Boolean readonlyRegister, Int32 defaultValue) {
+        this.RegisterPage = registerPage;
+        this.Address = address;
+        this.BitOffset = bitOffset;
+        this.SignedInt = signedInt;
+        this.SizeInBits = sizeInBits;
+        this.ReadonlyRegister = readonlyRegister;
+        this.DefaultValue = defaultValue;
+      }
+      public override String ToString() => "Reg: [P:" + this.RegisterPage + ",A:" + this.Address + ",O:" + this.BitOffset + "]";
+    };
+
     public static class Registers {
       #region Global Registers
       public static LGWRegisters PAGE_REG = new LGWRegisters(-1, 0, 0, false, 2, false, 0);
@@ -342,76 +395,90 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       public static LGWRegisters DATA_MNGT_CPT_FRAME_READEN = new LGWRegisters(2, 97, 0, false, 5, true, 0);
       #endregion
     }
-    [Obsolete()]
-    public struct LGWRegisters {
-      /// <summary>
-      /// page containing the register (-1 for all pages)
-      /// </summary>
-      public SByte RegisterPage;
-      /// <summary>
-      /// base address of the register (7 bit)
-      /// </summary>
-      public Byte Address;
-      /// <summary>
-      /// position of the register LSB (between 0 to 7)
-      /// </summary>
-      public Byte BitOffset;
-      /// <summary>
-      /// indicates the register is signed (2 complem.)
-      /// </summary>
-      public Boolean SignedInt;
-      /// <summary>
-      /// number of bits in the register
-      /// </summary>
-      public Byte SizeInBits;
-      /// <summary>
-      /// indicates a read-only register
-      /// </summary>
-      public Boolean ReadonlyRegister;
-      /// <summary>
-      /// register default value
-      /// </summary>
-      public Int32 DefaultValue;
-      /// <summary>
-      /// A Register of SX3101
-      /// </summary>
-      /// <param name="registerPage">page containing the register (-1 for all pages)</param>
-      /// <param name="address">base address of the register (7 bit)</param>
-      /// <param name="bitOffset">position of the register LSB (between 0 to 7)</param>
-      /// <param name="signedInt">indicates the register is signed (2 complem.)</param>
-      /// <param name="sizeInBits">number of bits in the register</param>
-      /// <param name="readonlyRegister">indicates a read-only register</param>
-      /// <param name="defaultValue">register default value</param>
-      public LGWRegisters(SByte registerPage, Byte address, Byte bitOffset, Boolean signedInt, Byte sizeInBits, Boolean readonlyRegister, Int32 defaultValue) {
-        this.RegisterPage = registerPage;
-        this.Address = address;
-        this.BitOffset = bitOffset;
-        this.SignedInt = signedInt;
-        this.SizeInBits = sizeInBits;
-        this.ReadonlyRegister = readonlyRegister;
-        this.DefaultValue = defaultValue;
-      }
-      public override String ToString() => "Reg: [P:" + this.RegisterPage + ",A:" + this.Address + ",O:" + this.BitOffset + "]";
-    };
 
-    public static class SX125X {
-      public static Byte TX_DAC_CLK_SEL = 1;
-      public static Byte XOSC_GM_STARTUP = 13;
-      public static Byte XOSC_DISABLE = 2;
-      public static Byte TX_MIX_GAIN = 14;
-      public static Byte TX_DAC_GAIN = 2;
-      public static Byte TX_ANA_BW = 0;
-      public static Byte TX_PLL_BW = 1;
-      public static Byte TX_DAC_BW = 5;
-      public static Byte LNA_ZIN = 1;
-      public static Byte RX_BB_GAIN = 12;
-      public static Byte RX_LNA_GAIN = 1;
-      public static Byte RX_BB_BW = 0;
-      public static Byte RX_ADC_TRIM = 6;
-      public static Byte RX_ADC_BW = 7;
-      public static Byte ADC_TEMP = 0;
-      public static Byte RX_PLL_BW = 0;
-      public static UInt32 FRAC_32MHz = 15625;
+    private Int32 RegisterRead(LGWRegisters register) {
+      if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
+        this.PageSwitch((Byte)register.RegisterPage);
+      }
+      Byte[] bufu = new Byte[4];
+      SByte[] bufs = new SByte[4];
+      if(register.BitOffset + register.SizeInBits <= 8) { /* read one byte, then shift and mask bits to get reg value with sign extension if needed */
+        bufu[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)));
+        bufu[1] = (Byte)(bufu[0] << (8 - register.SizeInBits - register.BitOffset)); /* left-align the data */
+        if(register.SignedInt == true) {
+          bufs[2] = (SByte)(bufs[1] >> (8 - register.SizeInBits)); /* right align the data with sign extension (ARITHMETIC right shift) */
+          return bufs[2]; /* signed pointer -> 32b sign extension */
+        } else {
+          bufu[2] = (Byte)(bufu[1] >> (8 - register.SizeInBits)); /* right align the data, no sign extension */
+          return bufu[2]; /* unsigned pointer -> no sign extension */
+        }
+      } else if(register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) {
+        Byte size = (Byte)((register.SizeInBits + 7) / 8); /* add a byte if it's not an exact multiple of 8 */
+        bufu = this.SPIreadRegisterBurst((Byte)(0x00 | (register.Address & 0x7F)), size);
+        UInt32 u = 0;
+        for(SByte i = (SByte)(size - 1); i >= 0; --i) {
+          u = bufu[i] + (u << 8); /* transform a 4-byte array into a 32 bit word */
+        }
+        if(register.SignedInt == true) {
+          u <<= 32 - register.SizeInBits; /* left-align the data */
+          return (Int32)u >> (32 - register.SizeInBits); /* right-align the data with sign extension (ARITHMETIC right shift) */
+        } else {
+          return (Int32)u; /* unsigned value -> return 'as is' */
+        }
+      } else { /* register spanning multiple memory bytes but with an offset */
+        Helper.WriteError("ERROR: REGISTER SIZE AND OFFSET ARE NOT SUPPORTED");
+        return 0;
+      }
+    }
+
+    private void RegisterWrite(LGWRegisters register, Int32 value) {
+      if(register.Equals(Registers.PAGE_REG)) {
+        this.PageSwitch((Byte)value);
+        return;
+      } else if(register.Equals(Registers.SOFT_RESET)) {
+        if((value & 0x01) != 0) {
+          this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.SOFT_RESET.Address & 0x7F)), 0x80);
+        }
+        return;
+      }
+      if(register.ReadonlyRegister) {
+        throw new ArgumentException("Register is a readonly register, you cant write!", register.GetType().ToString());
+      }
+      if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
+        this.PageSwitch((Byte)register.RegisterPage);
+      }
+      Byte[] buf = new Byte[4];
+      if(register.SizeInBits == 8 && register.BitOffset == 0) {
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), (Byte)value);
+      } else if(register.BitOffset + register.SizeInBits <= 8) { // single-byte read-modify-write, offs:[0-7], leng:[1-7]
+        buf[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)));
+        buf[1] = (Byte)(((1 << register.SizeInBits) - 1) << register.BitOffset); // bit mask
+        buf[2] = (Byte)(((Byte)value) << register.BitOffset); // new data offsetted
+        buf[3] = (Byte)((~buf[1] & buf[0]) | (buf[1] & buf[2])); // mixing old & new data
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), buf[3]);
+      } else if(register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) { // multi-byte direct write routine
+        Byte size = (Byte)((register.SizeInBits + 7) / 8); // add a byte if it's not an exact multiple of 8
+        Byte[] mbuf = new Byte[size];
+        for(Byte i = 0; i < size; ++i) { // big endian register file for a file on N bytes Least significant byte is stored in buf[0], most one in buf[N - 1]
+          mbuf[i] = (Byte)(0x000000FF & value);
+          value >>= 8;
+        }
+        this.SPIwriteRegisterBurst((Byte)(0x80 | (register.Address & 0x7F)), mbuf); // write the register in one burst
+      } else {
+        throw new ArgumentException("Register spanning multiple memory bytes but with an offset!", register.GetType().ToString());
+      }
+    }
+
+    private Byte[] RegisterReadArray(LGWRegisters register, UInt16 size) {
+      if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) { /* select proper register page if needed */
+        this.PageSwitch((Byte)register.RegisterPage);
+      }
+      return this.SPIreadRegisterBurst((Byte)(0x00 | (register.Address & 0x7F)), size);
+    }
+
+    private void PageSwitch(Byte targetPage) {
+      this._selectedPage = (Byte)(0x03 & targetPage);
+      this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this._selectedPage);
     }
   }
 }
