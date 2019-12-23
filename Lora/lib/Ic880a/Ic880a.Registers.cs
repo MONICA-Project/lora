@@ -1,61 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using BlubbFish.Utils;
+using System.Threading;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
   public partial class Ic880a {
-    public struct LGWRegisters {
-      /// <summary>
-      /// page containing the register (-1 for all pages)
-      /// </summary>
-      public SByte RegisterPage;
-      /// <summary>
-      /// base address of the register (7 bit)
-      /// </summary>
-      public Byte Address;
-      /// <summary>
-      /// position of the register LSB (between 0 to 7)
-      /// </summary>
-      public Byte BitOffset;
-      /// <summary>
-      /// indicates the register is signed (2 complem.)
-      /// </summary>
-      public Boolean SignedInt;
-      /// <summary>
-      /// number of bits in the register
-      /// </summary>
-      public Byte SizeInBits;
-      /// <summary>
-      /// indicates a read-only register
-      /// </summary>
-      public Boolean ReadonlyRegister;
-      /// <summary>
-      /// register default value
-      /// </summary>
-      public Int32 DefaultValue;
-      /// <summary>
-      /// A Register of SX3101
-      /// </summary>
-      /// <param name="registerPage">page containing the register (-1 for all pages)</param>
-      /// <param name="address">base address of the register (7 bit)</param>
-      /// <param name="bitOffset">position of the register LSB (between 0 to 7)</param>
-      /// <param name="signedInt">indicates the register is signed (2 complem.)</param>
-      /// <param name="sizeInBits">number of bits in the register</param>
-      /// <param name="readonlyRegister">indicates a read-only register</param>
-      /// <param name="defaultValue">register default value</param>
-      public LGWRegisters(SByte registerPage, Byte address, Byte bitOffset, Boolean signedInt, Byte sizeInBits, Boolean readonlyRegister, Int32 defaultValue) {
-        this.RegisterPage = registerPage;
-        this.Address = address;
-        this.BitOffset = bitOffset;
-        this.SignedInt = signedInt;
-        this.SizeInBits = sizeInBits;
-        this.ReadonlyRegister = readonlyRegister;
-        this.DefaultValue = defaultValue;
-      }
-      public override String ToString() => "Reg: [P:" + this.RegisterPage + ",A:" + this.Address + ",O:" + this.BitOffset + "]";
-    };
-
     public static class Registers {
       #region Global Registers
       public static LGWRegisters PAGE_REG = new LGWRegisters(-1, 0, 0, false, 2, false, 0);
@@ -394,16 +341,77 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       public static LGWRegisters DATA_MNGT_CPT_FRAME_FINISHED = new LGWRegisters(2, 96, 0, false, 5, true, 0);
       public static LGWRegisters DATA_MNGT_CPT_FRAME_READEN = new LGWRegisters(2, 97, 0, false, 5, true, 0);
       #endregion
+
+      #region FPGA Registers
+      public static FpgaRegisters FPGA_SOFT_RESET = new FpgaRegisters(-1, 0, 0, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_FEATURE = new FpgaRegisters(-1, 0, 1, false, 4, true, 0, 0x1);
+      public static FpgaRegisters LBT_INITIAL_FREQ = new FpgaRegisters(-1, 0, 5, false, 3, true, 0, 0x1);
+      public static FpgaRegisters FPGA_VERSION = new FpgaRegisters(-1, 1, 0, false, 8, true, 0, 0x1);
+      public static FpgaRegisters FPGA_STATUS = new FpgaRegisters(-1, 2, 0, false, 8, true, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_FEATURE_START = new FpgaRegisters(-1, 3, 0, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_RADIO_RESET = new FpgaRegisters(-1, 3, 1, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_INPUT_SYNC_I = new FpgaRegisters(-1, 3, 2, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_INPUT_SYNC_Q = new FpgaRegisters(-1, 3, 3, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_OUTPUT_SYNC = new FpgaRegisters(-1, 3, 4, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_INVERT_IQ = new FpgaRegisters(-1, 3, 5, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_ACCESS_HISTO_MEM = new FpgaRegisters(-1, 3, 6, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_CTRL_CLEAR_HISTO_MEM = new FpgaRegisters(-1, 3, 7, false, 1, false, 0, 0x1);
+      public static FpgaRegisters HISTO_RAM_ADDR = new FpgaRegisters(-1, 4, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters HISTO_RAM_DATA = new FpgaRegisters(-1, 5, 0, false, 8, true, 0, 0x1);
+      public static FpgaRegisters HISTO_NB_READ = new FpgaRegisters(-1, 8, 0, false, 16, false, 1000, 0x1);
+      public static FpgaRegisters LBT_TIMESTAMP_CH = new FpgaRegisters(-1, 14, 0, false, 16, true, 0, 0x1);
+      public static FpgaRegisters LBT_TIMESTAMP_SELECT_CH = new FpgaRegisters(-1, 17, 0, false, 4, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH0_FREQ_OFFSET = new FpgaRegisters(-1, 18, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH1_FREQ_OFFSET = new FpgaRegisters(-1, 19, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH2_FREQ_OFFSET = new FpgaRegisters(-1, 20, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH3_FREQ_OFFSET = new FpgaRegisters(-1, 21, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH4_FREQ_OFFSET = new FpgaRegisters(-1, 22, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH5_FREQ_OFFSET = new FpgaRegisters(-1, 23, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH6_FREQ_OFFSET = new FpgaRegisters(-1, 24, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_CH7_FREQ_OFFSET = new FpgaRegisters(-1, 25, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters SCAN_FREQ_OFFSET = new FpgaRegisters(-1, 26, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH0 = new FpgaRegisters(-1, 28, 0, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH1 = new FpgaRegisters(-1, 28, 1, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH2 = new FpgaRegisters(-1, 28, 2, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH3 = new FpgaRegisters(-1, 28, 3, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH4 = new FpgaRegisters(-1, 28, 4, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH5 = new FpgaRegisters(-1, 28, 5, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH6 = new FpgaRegisters(-1, 28, 6, false, 1, false, 0, 0x1);
+      public static FpgaRegisters LBT_SCAN_TIME_CH7 = new FpgaRegisters(-1, 28, 7, false, 1, false, 0, 0x1);
+      public static FpgaRegisters RSSI_TARGET = new FpgaRegisters(-1, 30, 0, false, 8, false, 160, 0x1);
+      public static FpgaRegisters HISTO_SCAN_FREQ = new FpgaRegisters(-1, 31, 0, false, 24, false, 0, 0x1);
+      public static FpgaRegisters NOTCH_FREQ_OFFSET = new FpgaRegisters(-1, 34, 0, false, 6, false, 0, 0x1);
+      #endregion
     }
 
-    private Int32 RegisterRead(LGWRegisters register) {
+    public static class SX125X {
+      public static Byte TX_DAC_CLK_SEL = 1;
+      public static Byte XOSC_GM_STARTUP = 13;
+      public static Byte XOSC_DISABLE = 2;
+      public static Byte TX_MIX_GAIN = 14;
+      public static Byte TX_DAC_GAIN = 2;
+      public static Byte TX_ANA_BW = 0;
+      public static Byte TX_PLL_BW = 1;
+      public static Byte TX_DAC_BW = 5;
+      public static Byte LNA_ZIN = 1;
+      public static Byte RX_BB_GAIN = 12;
+      public static Byte RX_LNA_GAIN = 1;
+      public static Byte RX_BB_BW = 0;
+      public static Byte RX_ADC_TRIM = 6;
+      public static Byte RX_ADC_BW = 7;
+      public static Byte ADC_TEMP = 0;
+      public static Byte RX_PLL_BW = 0;
+      public static UInt32 FRAC_32MHz = 15625;
+    }
+
+    private Int32 RegisterRead(LGWRegisters register, Byte mux = 0) {
       if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
         this.PageSwitch((Byte)register.RegisterPage);
       }
       Byte[] bufu = new Byte[4];
       SByte[] bufs = new SByte[4];
       if(register.BitOffset + register.SizeInBits <= 8) { /* read one byte, then shift and mask bits to get reg value with sign extension if needed */
-        bufu[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)));
+        bufu[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)), mux);
         bufu[1] = (Byte)(bufu[0] << (8 - register.SizeInBits - register.BitOffset)); /* left-align the data */
         if(register.SignedInt == true) {
           bufs[2] = (SByte)(bufs[1] >> (8 - register.SizeInBits)); /* right align the data with sign extension (ARITHMETIC right shift) */
@@ -414,7 +422,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         }
       } else if(register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) {
         Byte size = (Byte)((register.SizeInBits + 7) / 8); /* add a byte if it's not an exact multiple of 8 */
-        bufu = this.SPIreadRegisterBurst((Byte)(0x00 | (register.Address & 0x7F)), size);
+        bufu = this.SPIreadRegisterBurst((Byte)(0x00 | (register.Address & 0x7F)), size, mux);
         UInt32 u = 0;
         for(SByte i = (SByte)(size - 1); i >= 0; --i) {
           u = bufu[i] + (u << 8); /* transform a 4-byte array into a 32 bit word */
@@ -426,10 +434,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           return (Int32)u; /* unsigned value -> return 'as is' */
         }
       } else { /* register spanning multiple memory bytes but with an offset */
-        Helper.WriteError("ERROR: REGISTER SIZE AND OFFSET ARE NOT SUPPORTED");
-        return 0;
+        throw new ArgumentException("Register size and offset are not supported!", register.GetType().ToString());
       }
     }
+
+    private Int32 RegisterRead(FpgaRegisters register) => this.RegisterRead((LGWRegisters)register, register.mux);
 
     private void RegisterWrite(LGWRegisters register, Int32 value) {
       if(register.Equals(Registers.PAGE_REG)) {
@@ -476,9 +485,159 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       return this.SPIreadRegisterBurst((Byte)(0x00 | (register.Address & 0x7F)), size);
     }
 
+    private void RegisterWriteArray(LGWRegisters register, Byte[] value) {
+      if(register.ReadonlyRegister) {
+        throw new ArgumentException("Register is a readonly register, you cant write!", register.GetType().ToString());
+      }
+      if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) { // select proper register page if needed 
+        this.PageSwitch((Byte)register.RegisterPage);
+      }
+      this.SPIwriteRegisterBurstRaw((Byte)(0x80 | (register.Address & 0x7F)), value); // do the burst write 
+    }
+
     private void PageSwitch(Byte targetPage) {
       this._selectedPage = (Byte)(0x03 & targetPage);
       this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this._selectedPage);
     }
+
+    private void RegisterSx125xSetup(Byte rf_chain, Byte rf_clkout, Boolean rf_enable, RadioType rf_radio_type, UInt32 freq_hz) {
+      Int32 cpt_attempts = 0;
+
+      if(rf_chain >= 2) {
+        throw new Exception("ERROR: INVALID RF_CHAIN");
+      }
+
+      // Get version to identify SX1255/57 silicon revision 
+      //Console.WriteLine("Note: SX125x #" + rf_chain + " version register returned " + this.Sx125xRead(rf_chain, 0x07).ToString("X2"));
+
+      // General radio setup 
+      if(rf_clkout == rf_chain) {
+        this.RegisterSx125xWrite(rf_chain, 0x10, (Byte)(SX125X.TX_DAC_CLK_SEL + 2));
+        //Console.WriteLine("Note: SX125x #"+ rf_chain + " clock output enabled");
+      } else {
+        this.RegisterSx125xWrite(rf_chain, 0x10, SX125X.TX_DAC_CLK_SEL);
+        //Console.WriteLine("Note: SX125x #"+ rf_chain + " clock output disabled");
+      }
+
+      switch(rf_radio_type) {
+        case RadioType.SX1255: //LGW_RADIO_TYPE_SX1255
+          this.RegisterSx125xWrite(rf_chain, 0x28, (Byte)(SX125X.XOSC_GM_STARTUP + SX125X.XOSC_DISABLE * 16));
+          break;
+        case RadioType.SX1257: //LGW_RADIO_TYPE_SX1257
+          this.RegisterSx125xWrite(rf_chain, 0x26, (Byte)(SX125X.XOSC_GM_STARTUP + SX125X.XOSC_DISABLE * 16));
+          break;
+        default:
+          throw new Exception("ERROR: UNEXPECTED VALUE " + rf_radio_type + " FOR RADIO TYPE");
+      }
+
+      if(rf_enable == true) {
+        // Tx gain and trim 
+        this.RegisterSx125xWrite(rf_chain, 0x08, (Byte)(SX125X.TX_MIX_GAIN + SX125X.TX_DAC_GAIN * 16));
+        this.RegisterSx125xWrite(rf_chain, 0x0A, (Byte)(SX125X.TX_ANA_BW + SX125X.TX_PLL_BW * 32));
+        this.RegisterSx125xWrite(rf_chain, 0x0B, SX125X.TX_DAC_BW);
+
+        // Rx gain and trim 
+        this.RegisterSx125xWrite(rf_chain, 0x0C, (Byte)(SX125X.LNA_ZIN + SX125X.RX_BB_GAIN * 2 + SX125X.RX_LNA_GAIN * 32));
+        this.RegisterSx125xWrite(rf_chain, 0x0D, (Byte)(SX125X.RX_BB_BW + SX125X.RX_ADC_TRIM * 4 + SX125X.RX_ADC_BW * 32));
+        this.RegisterSx125xWrite(rf_chain, 0x0E, (Byte)(SX125X.ADC_TEMP + SX125X.RX_PLL_BW * 2));
+
+        UInt32 part_int;
+        UInt32 part_frac;
+        // set RX PLL frequency 
+        switch(rf_radio_type) {
+          case RadioType.SX1255: //LGW_RADIO_TYPE_SX1255:
+            part_int = freq_hz / (SX125X.FRAC_32MHz << 7); // integer part, gives the MSB 
+            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 7)) << 9) / SX125X.FRAC_32MHz; // fractional part, gives middle part and LSB 
+            break;
+          case RadioType.SX1257: //LGW_RADIO_TYPE_SX1257:
+            part_int = freq_hz / (SX125X.FRAC_32MHz << 8); // integer part, gives the MSB 
+            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 8)) << 8) / SX125X.FRAC_32MHz; // fractional part, gives middle part and LSB 
+            break;
+          default:
+            throw new Exception("ERROR: UNEXPECTED VALUE " + rf_radio_type + " FOR RADIO TYPE");
+        }
+
+        this.RegisterSx125xWrite(rf_chain, 0x01, (Byte)(0xFF & part_int)); // Most Significant Byte 
+        this.RegisterSx125xWrite(rf_chain, 0x02, (Byte)(0xFF & (part_frac >> 8))); // middle byte 
+        this.RegisterSx125xWrite(rf_chain, 0x03, (Byte)(0xFF & part_frac)); // Least Significant Byte 
+
+        // start and PLL lock 
+        do {
+          if(cpt_attempts >= 5) {
+            throw new Exception("ERROR: FAIL TO LOCK PLL");
+          }
+          this.RegisterSx125xWrite(rf_chain, 0x00, 1); // enable Xtal oscillator 
+          this.RegisterSx125xWrite(rf_chain, 0x00, 3); // Enable RX (PLL+FE) 
+          ++cpt_attempts;
+          //Console.WriteLine("Note: SX125x #"+ rf_chain + " PLL start (attempt "+ cpt_attempts + ")");
+          Thread.Sleep(2);
+        } while((this.RegisterSx125xRead(rf_chain, 0x11) & 0x02) == 0);
+      } else {
+        Console.WriteLine("Note: SX125x #" + rf_chain + " kept in standby mode");
+      }
+    }
+
+    private Byte RegisterSx125xRead(Byte channel, Byte addr) {
+      LGWRegisters reg_add, reg_dat, reg_cs, reg_rb;
+      if(channel >= 2) { // checking input parameters 
+        throw new Exception("ERROR: INVALID RF_CHAIN\n");
+      }
+      if(addr >= 0x7F) {
+        throw new Exception("ERROR: ADDRESS OUT OF RANGE\n");
+      }
+      switch(channel) { // selecting the target radio 
+        case 0:
+          reg_add = Registers.SPI_RADIO_A__ADDR;
+          reg_dat = Registers.SPI_RADIO_A__DATA;
+          reg_cs = Registers.SPI_RADIO_A__CS;
+          reg_rb = Registers.SPI_RADIO_A__DATA_READBACK;
+          break;
+        case 1:
+          reg_add = Registers.SPI_RADIO_B__ADDR;
+          reg_dat = Registers.SPI_RADIO_B__DATA;
+          reg_cs = Registers.SPI_RADIO_B__CS;
+          reg_rb = Registers.SPI_RADIO_B__DATA_READBACK;
+          break;
+        default:
+          throw new Exception("ERROR: UNEXPECTED VALUE " + channel + " IN SWITCH STATEMENT");
+      }
+      this.RegisterWrite(reg_cs, 0); // SPI master data read procedure 
+      this.RegisterWrite(reg_add, addr); // MSB at 0 for read operation 
+      this.RegisterWrite(reg_dat, 0);
+      this.RegisterWrite(reg_cs, 1);
+      this.RegisterWrite(reg_cs, 0);
+      return (Byte)this.RegisterRead(reg_rb);
+    }
+
+    private void RegisterSx125xWrite(Byte channel, Byte addr, Byte data) {
+      LGWRegisters reg_add, reg_dat, reg_cs;
+      if(channel >= 2) { // checking input parameters 
+        throw new Exception("ERROR: INVALID RF_CHAIN\n");
+      }
+      if(addr >= 0x7F) {
+        throw new Exception("ERROR: ADDRESS OUT OF RANGE\n");
+      }
+      switch(channel) { // selecting the target radio 
+        case 0:
+          reg_add = Registers.SPI_RADIO_A__ADDR;
+          reg_dat = Registers.SPI_RADIO_A__DATA;
+          reg_cs = Registers.SPI_RADIO_A__CS;
+          break;
+        case 1:
+          reg_add = Registers.SPI_RADIO_B__ADDR;
+          reg_dat = Registers.SPI_RADIO_B__DATA;
+          reg_cs = Registers.SPI_RADIO_B__CS;
+          break;
+        default:
+          throw new Exception("ERROR: UNEXPECTED VALUE " + channel + " IN SWITCH STATEMENT");
+      }
+      this.RegisterWrite(reg_cs, 0); // SPI master data write procedure 
+      this.RegisterWrite(reg_add, 0x80 | addr); // MSB at 1 for write operation 
+      this.RegisterWrite(reg_dat, data);
+      this.RegisterWrite(reg_cs, 1);
+      this.RegisterWrite(reg_cs, 0);
+    }
+
+    
   }
 }

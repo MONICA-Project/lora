@@ -34,7 +34,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       public static Int16 ERR_NONE => 0;
     }
 
-    protected Byte SPIreadRegister(Byte address) => this.MultiSPI(SPICommands.Read, address, null, 1)[0];
+    protected Byte SPIreadRegister(Byte address, Byte mux = 0) => mux == 0 ? this.MultiSPI(SPICommands.Read, address, null, 1)[0] : this.MultiSPIMux(SPICommands.Read, address, null, 1, mux)[1];
 
     protected void SPIwriteRegister(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), new Byte[] { data }, 1);
 
@@ -74,9 +74,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       return Errorcodes.ERR_SPI_WRITE_FAILED;
     }
 
-    protected Byte[] SPIreadRegisterBurst(Byte address, UInt16 numBytes) => this.MultiSPI(SPICommands.Read, address, new Byte[] { }, numBytes);
+    protected Byte[] SPIreadRegisterBurst(Byte address, UInt16 numBytes, Byte mux = 0) => mux == 0 ? this.MultiSPI(SPICommands.Read, address, null, numBytes) : this.MultiSPIMux(SPICommands.Read, address, null, 1, mux);
 
     protected void SPIwriteRegisterBurst(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), data, (UInt16)data.Length);
+
+    protected void SPIwriteRegisterBurstRaw(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, address, data, (UInt16)data.Length);
 
     private Byte[] MultiSPI(Byte cmd, Byte address, Byte[] value, UInt16 size) {
       Byte[] tx = new Byte[size + 1];
@@ -92,6 +94,25 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       Byte[] spibuf = new Byte[size];
       for(UInt16 i = 0; i < size; i++) {
         spibuf[i] = rx[i + 1];
+      }
+      return spibuf;
+    }
+
+    private Byte[] MultiSPIMux(Byte cmd, Byte address, Byte[] value, UInt16 size, Byte mux) {
+      Byte[] tx = new Byte[size + 2];
+      tx[0] = mux;
+      tx[1] = address;
+      if(cmd == SPICommands.Write) {
+        for(UInt16 i = 0; i < size; i++) {
+          tx[i + 1] = value[i];
+        }
+      }
+      this.PinChipSelect.Write(GpioPinValue.Low);
+      Byte[] rx = this.SpiChannel.SendReceive(tx);
+      this.PinChipSelect.Write(GpioPinValue.High);
+      Byte[] spibuf = new Byte[size];
+      for(UInt16 i = 0; i < size; i++) {
+        spibuf[i] = rx[i + 2];
       }
       return spibuf;
     }

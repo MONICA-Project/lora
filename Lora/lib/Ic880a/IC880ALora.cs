@@ -38,10 +38,10 @@ using Unosquare.RaspberryIO.Abstractions;
 using Unosquare.WiringPi;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
-  public partial class Ic880alora : LoraConnector {
+  /*public partial class Ic880alora : LoraConnector {
     #region Private Variables
     private readonly GpioPin PinSlaveSelect;
-    //private readonly GpioPin PinReset;
+    private readonly GpioPin PinReset;
     private readonly SpiChannel SpiChannel;
     private Thread receiveThread;
     private Boolean ReceiveRunnerAlive;
@@ -74,10 +74,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     private Boolean CrcEnabled;
 
     #endregion
+    
     #endregion
 
     #region Registers, Modes, Pa, Irq
-    [Obsolete()]
     public enum BW {
       Undefined = 0,
       BW_500KHZ = 1,
@@ -89,7 +89,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       BW_7K8HZ = 7      
     }
 
-    [Obsolete()]
     public enum SF : Byte {
       Undefined = 0,
       DR_LORA_SF7 = 2,
@@ -102,7 +101,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     }
 
 
-    [Obsolete()]
     public enum CR : Byte {
       Undefined = 0,
       CR_LORA_4_5 = 1,
@@ -111,19 +109,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       CR_LORA_4_8 = 4
     }
 
-    [Obsolete()]
     public enum Reciever : Byte {
       Chain0 = 0,
       Chain1 = 1
     }
 
-    [Obsolete()]
     enum RadioType : Byte {
       SX1255 = 0,
       SX1257 = 1
     }
 
-    [Obsolete()]
     public enum RadioDataType : Byte {
       Undefined = 0,
       Lora = 16,
@@ -131,14 +126,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       FSK = 32
     }
 
-    [Obsolete()]
     public enum Modulation : Byte {
       Undefined = 0,
       Lora = 0x10,
       Fsk = 0x20
     }
 
-    [Obsolete()]
     public enum Crc : Byte {
       CrcOk = 0x10,
       CrcBad = 0x11,
@@ -168,14 +161,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     #endregion
 
     #region Constructor
-    /*public Ic880alora(Dictionary<String, String> settings) : base(settings) {
+    public Ic880alora(Dictionary<String, String> settings) : base(settings) {
       Pi.Init<BootstrapWiringPi>();
       this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
       this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);  //Physical pin 24, BCM pin  8, Wiring Pi pin 10 (SPI0 CE0)
       this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);          //Physical pin 29, BCM pin  5, Wiring Pi pin 21 (GPCLK1)
-    }*/
+    }
 
-    /*public override Boolean Begin() {
+    public override Boolean Begin() {
       this.SetupIO();
       this.Reset();
       if (this.RegisterRead(Registers.VERSION) != Registers.VERSION.DefaultValue) {
@@ -186,22 +179,22 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
       this.receiveThread = new Thread(this.ReceiveRunner);
       return true;
-    }*/
+    }
 
-    /*public override void End() {
+    public override void End() {
       this.deviceStarted = false;
       _ = this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
-    }*/
+    }
 
-    /*public override void Dispose() {
+    public override void Dispose() {
       this.ReceiveRunnerAlive = false;
       while(this.receiveThread.IsAlive) {
         Thread.Sleep(10);
       }
       this.receiveThread = null;
-    }*/
+    }
 
-    /*public override Boolean StartRadio() {
+    public override Boolean StartRadio() {
       _ = this.RegisterWrite(Registers.GLOBAL_EN, 0); //gate clocks
       _ = this.RegisterWrite(Registers.CLK32M_EN, 0);
 
@@ -390,7 +383,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.RegisterWrite(Registers.FORCE_HOST_FE_CTRL, 0);
       _ = this.RegisterWrite(Registers.FORCE_DEC_FILTER_GAIN, 0);
 
-      _ = this.RegisterWrite(Registers.RADIO_SELECT, 0); // Get MCUs out of reset */ /* MUST not be = to 1 or 2 at firmware init 
+      _ = this.RegisterWrite(Registers.RADIO_SELECT, 0); // Get MCUs out of reset  MUST not be = to 1 or 2 at firmware init 
       _ = this.RegisterWrite(Registers.MCU_RST_0, 0);
       _ = this.RegisterWrite(Registers.MCU_RST_1, 0);
 
@@ -482,7 +475,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
       this.deviceStarted = true;
       return true;
-    }*/
+    }
 
     public override void ParseConfig() {
       try {
@@ -514,7 +507,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     public override Boolean EndPacket(Boolean async = false) => throw new NotImplementedException();
     public override Byte Write(Byte[] buffer) => throw new NotImplementedException();
 
-    /*public override void Receive(Byte size) {
+    public override void Receive(Byte size) {
       Byte[] recieveregister = this.RegisterReadArray(Registers.RX_PACKET_DATA_FIFO_NUM_STORED, 5);
       if (recieveregister[0] > 0 && recieveregister[0] <= 16) {
         // 0:   number of packets available in RX data buffer 
@@ -717,7 +710,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         _ = this.RegisterWrite(Registers.RX_PACKET_DATA_FIFO_NUM_STORED, 0);
       }
 
-    }*/
+    }
     #endregion
 
     #region RadioSettings
@@ -798,49 +791,48 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     #endregion
 
     #region Register Communication
-    [Obsolete()]
     private Int32 RegisterRead(LGWRegisters register) {
       if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) {
         this.PageSwitch((Byte)register.RegisterPage);
       }
       Byte[] bufu = new Byte[4];
       SByte[] bufs = new SByte[4];
-      if (register.BitOffset + register.SizeInBits <= 8) { /* read one byte, then shift and mask bits to get reg value with sign extension if needed */
+      if (register.BitOffset + register.SizeInBits <= 8) { // read one byte, then shift and mask bits to get reg value with sign extension if needed 
         bufu[0] = this.SingleSPI((Byte)(0x00 | (register.Address & 0x7F)));
-        bufu[1] = (Byte)(bufu[0] << (8 - register.SizeInBits - register.BitOffset)); /* left-align the data */
+        bufu[1] = (Byte)(bufu[0] << (8 - register.SizeInBits - register.BitOffset)); // left-align the data 
         if (register.SignedInt == true) {
-          bufs[2] = (SByte)(bufs[1] >> (8 - register.SizeInBits)); /* right align the data with sign extension (ARITHMETIC right shift) */
-          return bufs[2]; /* signed pointer -> 32b sign extension */
+          bufs[2] = (SByte)(bufs[1] >> (8 - register.SizeInBits)); // right align the data with sign extension (ARITHMETIC right shift) 
+          return bufs[2]; // signed pointer -> 32b sign extension 
         } else {
-          bufu[2] = (Byte)(bufu[1] >> (8 - register.SizeInBits)); /* right align the data, no sign extension */
-          return bufu[2]; /* unsigned pointer -> no sign extension */
+          bufu[2] = (Byte)(bufu[1] >> (8 - register.SizeInBits)); // right align the data, no sign extension 
+          return bufu[2]; // unsigned pointer -> no sign extension 
         }
       } else if (register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) {
-        Byte size = (Byte)((register.SizeInBits + 7) / 8); /* add a byte if it's not an exact multiple of 8 */
+        Byte size = (Byte)((register.SizeInBits + 7) / 8); // add a byte if it's not an exact multiple of 8 
         bufu = this.MultiSPI((Byte)(0x00 | (register.Address & 0x7F)), new Byte[size], size);
         UInt32 u = 0;
         for (SByte i = (SByte)(size - 1); i >= 0; --i) {
-          u = bufu[i] + (u << 8); /* transform a 4-byte array into a 32 bit word */
+          u = bufu[i] + (u << 8); // transform a 4-byte array into a 32 bit word 
         }
         if (register.SignedInt == true) {
-          u <<= 32 - register.SizeInBits; /* left-align the data */
-          return (Int32)u >> (32 - register.SizeInBits); /* right-align the data with sign extension (ARITHMETIC right shift) */
+          u <<= 32 - register.SizeInBits; // left-align the data 
+          return (Int32)u >> (32 - register.SizeInBits); // right-align the data with sign extension (ARITHMETIC right shift) 
         } else {
-          return (Int32)u; /* unsigned value -> return 'as is' */
+          return (Int32)u; // unsigned value -> return 'as is' 
         }
-      } else { /* register spanning multiple memory bytes but with an offset */
+      } else { // register spanning multiple memory bytes but with an offset 
         Helper.WriteError("ERROR: REGISTER SIZE AND OFFSET ARE NOT SUPPORTED");
         return 0;
       }
     }
-    [Obsolete()]
+
     private Byte[] RegisterReadArray(LGWRegisters register, UInt16 size) {
-      if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) { /* select proper register page if needed */
+      if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) { // select proper register page if needed 
         this.PageSwitch((Byte)register.RegisterPage);
       }
       return this.MultiSPI((Byte)(0x00 | (register.Address & 0x7F)), new Byte[size], size);
     }
-    [Obsolete()]
+    
     private Boolean RegisterWrite(LGWRegisters register, Int32 value) {
       if (register.Equals(Registers.PAGE_REG)) {
         this.PageSwitch((Byte)value);
@@ -884,13 +876,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         Helper.WriteError("ERROR: TRYING TO BURST WRITE A READ-ONLY REGISTER");
         return false;
       }
-      if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) { /* select proper register page if needed */
+      if (register.RegisterPage != -1 && register.RegisterPage != this.selectedPage) { // select proper register page if needed 
         this.PageSwitch((Byte)register.RegisterPage);
       }
-      _ = this.MultiSPI((Byte)(0x80 | (register.Address & 0x7F)), value, size); /* do the burst write */
+      _ = this.MultiSPI((Byte)(0x80 | (register.Address & 0x7F)), value, size); // do the burst write 
       return true;
     }
-    [Obsolete()]
+    
     private void PageSwitch(Byte targetPage) {
       this.selectedPage = (Byte)(0x03 & targetPage);
       _ = this.SingleSPI((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this.selectedPage);
@@ -905,10 +897,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         throw new Exception("ERROR: INVALID RF_CHAIN");
       }
 
-      /* Get version to identify SX1255/57 silicon revision */
+      // Get version to identify SX1255/57 silicon revision 
       //Console.WriteLine("Note: SX125x #" + rf_chain + " version register returned " + this.Sx125xRead(rf_chain, 0x07).ToString("X2"));
 
-      /* General radio setup */
+      // General radio setup 
       if (rf_clkout == rf_chain) {
         this.RegisterWriteSx125x(rf_chain, 0x10, (Byte)(SX125X.TX_DAC_CLK_SEL + 2));
         //Console.WriteLine("Note: SX125x #"+ rf_chain + " clock output enabled");
@@ -929,43 +921,43 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       }
 
       if (rf_enable == true) {
-        /* Tx gain and trim */
+        // Tx gain and trim 
         this.RegisterWriteSx125x(rf_chain, 0x08, (Byte)(SX125X.TX_MIX_GAIN + SX125X.TX_DAC_GAIN * 16));
         this.RegisterWriteSx125x(rf_chain, 0x0A, (Byte)(SX125X.TX_ANA_BW + SX125X.TX_PLL_BW * 32));
         this.RegisterWriteSx125x(rf_chain, 0x0B, SX125X.TX_DAC_BW);
 
-        /* Rx gain and trim */
+        // Rx gain and trim 
         this.RegisterWriteSx125x(rf_chain, 0x0C, (Byte)(SX125X.LNA_ZIN + SX125X.RX_BB_GAIN * 2 + SX125X.RX_LNA_GAIN * 32));
         this.RegisterWriteSx125x(rf_chain, 0x0D, (Byte)(SX125X.RX_BB_BW + SX125X.RX_ADC_TRIM * 4 + SX125X.RX_ADC_BW * 32));
         this.RegisterWriteSx125x(rf_chain, 0x0E, (Byte)(SX125X.ADC_TEMP + SX125X.RX_PLL_BW * 2));
 
         UInt32 part_int;
         UInt32 part_frac;
-        /* set RX PLL frequency */
+        // set RX PLL frequency 
         switch(rf_radio_type) {
           case RadioType.SX1255: //LGW_RADIO_TYPE_SX1255:
-            part_int = freq_hz / (SX125X.FRAC_32MHz << 7); /* integer part, gives the MSB */
-            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 7)) << 9) / SX125X.FRAC_32MHz; /* fractional part, gives middle part and LSB */
+            part_int = freq_hz / (SX125X.FRAC_32MHz << 7); // integer part, gives the MSB 
+            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 7)) << 9) / SX125X.FRAC_32MHz; // fractional part, gives middle part and LSB 
             break;
           case RadioType.SX1257: //LGW_RADIO_TYPE_SX1257:
-            part_int = freq_hz / (SX125X.FRAC_32MHz << 8); /* integer part, gives the MSB */
-            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 8)) << 8) / SX125X.FRAC_32MHz; /* fractional part, gives middle part and LSB */
+            part_int = freq_hz / (SX125X.FRAC_32MHz << 8); // integer part, gives the MSB 
+            part_frac = ((freq_hz % (SX125X.FRAC_32MHz << 8)) << 8) / SX125X.FRAC_32MHz; // fractional part, gives middle part and LSB 
             break;
           default:
             throw new Exception("ERROR: UNEXPECTED VALUE " + rf_radio_type + " FOR RADIO TYPE");
         }
 
-        this.RegisterWriteSx125x(rf_chain, 0x01, (Byte)(0xFF & part_int)); /* Most Significant Byte */
-        this.RegisterWriteSx125x(rf_chain, 0x02, (Byte)(0xFF & (part_frac >> 8))); /* middle byte */
-        this.RegisterWriteSx125x(rf_chain, 0x03, (Byte)(0xFF & part_frac)); /* Least Significant Byte */
+        this.RegisterWriteSx125x(rf_chain, 0x01, (Byte)(0xFF & part_int)); // Most Significant Byte 
+        this.RegisterWriteSx125x(rf_chain, 0x02, (Byte)(0xFF & (part_frac >> 8))); // middle byte 
+        this.RegisterWriteSx125x(rf_chain, 0x03, (Byte)(0xFF & part_frac)); // Least Significant Byte 
 
-        /* start and PLL lock */
+        // start and PLL lock 
         do {
           if (cpt_attempts >= 5) {
             throw new Exception("ERROR: FAIL TO LOCK PLL");
           }
-          this.RegisterWriteSx125x(rf_chain, 0x00, 1); /* enable Xtal oscillator */
-          this.RegisterWriteSx125x(rf_chain, 0x00, 3); /* Enable RX (PLL+FE) */
+          this.RegisterWriteSx125x(rf_chain, 0x00, 1); // enable Xtal oscillator 
+          this.RegisterWriteSx125x(rf_chain, 0x00, 3); // Enable RX (PLL+FE) 
           ++cpt_attempts;
           //Console.WriteLine("Note: SX125x #"+ rf_chain + " PLL start (attempt "+ cpt_attempts + ")");
           Thread.Sleep(2);
@@ -978,7 +970,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     private void RegisterWriteSx125x(Byte channel, Byte addr, Byte data) {
       LGWRegisters reg_add, reg_dat, reg_cs;
-      if (channel >= 2) { /* checking input parameters */
+      if (channel >= 2) { // checking input parameters 
         Helper.WriteError("ERROR: INVALID RF_CHAIN\n");
         return;
       }
@@ -986,7 +978,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         Helper.WriteError("ERROR: ADDRESS OUT OF RANGE\n");
         return;
       }
-      switch (channel) { /* selecting the target radio */
+      switch (channel) { // selecting the target radio 
         case 0:
           reg_add = Registers.SPI_RADIO_A__ADDR;
           reg_dat = Registers.SPI_RADIO_A__DATA;
@@ -1001,8 +993,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           Helper.WriteError("ERROR: UNEXPECTED VALUE " + channel + " IN SWITCH STATEMENT");
           return;
       }
-      _ = this.RegisterWrite(reg_cs, 0); /* SPI master data write procedure */
-      _ = this.RegisterWrite(reg_add, 0x80 | addr); /* MSB at 1 for write operation */
+      _ = this.RegisterWrite(reg_cs, 0); // SPI master data write procedure 
+      _ = this.RegisterWrite(reg_add, 0x80 | addr); // MSB at 1 for write operation 
       _ = this.RegisterWrite(reg_dat, data);
       _ = this.RegisterWrite(reg_cs, 1);
       _ = this.RegisterWrite(reg_cs, 0);
@@ -1010,7 +1002,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     private Byte RegisterReadSx125x(Byte channel, Byte addr) {
       LGWRegisters reg_add, reg_dat, reg_cs, reg_rb;
-      if (channel >= 2) { /* checking input parameters */
+      if (channel >= 2) { // checking input parameters 
         Helper.WriteError("ERROR: INVALID RF_CHAIN\n");
         return 0;
       }
@@ -1018,7 +1010,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         Helper.WriteError("ERROR: ADDRESS OUT OF RANGE\n");
         return 0;
       }
-      switch (channel) { /* selecting the target radio */
+      switch (channel) { // selecting the target radio 
         case 0:
           reg_add = Registers.SPI_RADIO_A__ADDR;
           reg_dat = Registers.SPI_RADIO_A__DATA;
@@ -1035,8 +1027,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           Helper.WriteError("ERROR: UNEXPECTED VALUE " + channel + " IN SWITCH STATEMENT");
           return 0;
       }
-      _ = this.RegisterWrite(reg_cs, 0); /* SPI master data read procedure */
-      _ = this.RegisterWrite(reg_add, addr); /* MSB at 0 for read operation */
+      _ = this.RegisterWrite(reg_cs, 0); // SPI master data read procedure 
+      _ = this.RegisterWrite(reg_add, addr); // MSB at 0 for read operation 
       _ = this.RegisterWrite(reg_dat, 0);
       _ = this.RegisterWrite(reg_cs, 1);
       _ = this.RegisterWrite(reg_cs, 0);
@@ -1046,128 +1038,128 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     #region Private Functions
     private void LoadAdjustConstants() {
-      /* I/Q path setup */
-      // lgw_reg_w(LGW_RX_INVERT_IQ,0); /* default 0 */
-      // lgw_reg_w(LGW_MODEM_INVERT_IQ,1); /* default 1 */
-      // lgw_reg_w(LGW_CHIRP_INVERT_RX,1); /* default 1 */
-      // lgw_reg_w(LGW_RX_EDGE_SELECT,0); /* default 0 */
-      // lgw_reg_w(LGW_MBWSSF_MODEM_INVERT_IQ,0); /* default 0 */
-      // lgw_reg_w(LGW_DC_NOTCH_EN,1); /* default 1 */
-      _ = this.RegisterWrite(Registers.RSSI_BB_FILTER_ALPHA, 6); /* default 7 */
-      _ = this.RegisterWrite(Registers.RSSI_DEC_FILTER_ALPHA, 7); /* default 5 */
-      _ = this.RegisterWrite(Registers.RSSI_CHANN_FILTER_ALPHA, 7); /* default 8 */
-      _ = this.RegisterWrite(Registers.RSSI_BB_DEFAULT_VALUE, 23); /* default 32 */
-      _ = this.RegisterWrite(Registers.RSSI_CHANN_DEFAULT_VALUE, 85); /* default 100 */
-      _ = this.RegisterWrite(Registers.RSSI_DEC_DEFAULT_VALUE, 66); /* default 100 */
-      _ = this.RegisterWrite(Registers.DEC_GAIN_OFFSET, 7); /* default 8 */
-      _ = this.RegisterWrite(Registers.CHAN_GAIN_OFFSET, 6); /* default 7 */
+      // I/Q path setup 
+      // lgw_reg_w(LGW_RX_INVERT_IQ,0); // default 0 
+      // lgw_reg_w(LGW_MODEM_INVERT_IQ,1); // default 1
+      // lgw_reg_w(LGW_CHIRP_INVERT_RX,1); // default 1 
+      // lgw_reg_w(LGW_RX_EDGE_SELECT,0); // default 0 
+      // lgw_reg_w(LGW_MBWSSF_MODEM_INVERT_IQ,0); // default 0 
+      // lgw_reg_w(LGW_DC_NOTCH_EN,1); // default 1 
+      _ = this.RegisterWrite(Registers.RSSI_BB_FILTER_ALPHA, 6); // default 7 
+      _ = this.RegisterWrite(Registers.RSSI_DEC_FILTER_ALPHA, 7); // default 5 
+      _ = this.RegisterWrite(Registers.RSSI_CHANN_FILTER_ALPHA, 7); // default 8 
+      _ = this.RegisterWrite(Registers.RSSI_BB_DEFAULT_VALUE, 23); // default 32
+      _ = this.RegisterWrite(Registers.RSSI_CHANN_DEFAULT_VALUE, 85); // default 100 
+      _ = this.RegisterWrite(Registers.RSSI_DEC_DEFAULT_VALUE, 66); // default 100 
+      _ = this.RegisterWrite(Registers.DEC_GAIN_OFFSET, 7); // default 8 
+      _ = this.RegisterWrite(Registers.CHAN_GAIN_OFFSET, 6); // default 7 
 
-      /* Correlator setup */
-      // lgw_reg_w(LGW_CORR_DETECT_EN,126); /* default 126 */
-      // lgw_reg_w(LGW_CORR_NUM_SAME_PEAK,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_MAC_GAIN,5); /* default 5 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF6,0); /* default 0 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF7,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF8,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF9,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF10,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF11,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF12,1); /* default 1 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF6,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF7,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF8,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF9,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF10,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF11,4); /* default 4 */
-      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF12,4); /* default 4 */
+      // Correlator setup 
+      // lgw_reg_w(LGW_CORR_DETECT_EN,126); // default 126 
+      // lgw_reg_w(LGW_CORR_NUM_SAME_PEAK,4); // default 4 
+      // lgw_reg_w(LGW_CORR_MAC_GAIN,5); // default 5 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF6,0); // default 0 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF7,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF8,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF9,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF10,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF11,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF12,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF6,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF7,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF8,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF9,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF10,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF11,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF12,4); // default 4 
 
-      /* LoRa 'multi' demodulators setup */
-      // lgw_reg_w(LGW_PREAMBLE_SYMB1_NB,10); /* default 10 */
-      // lgw_reg_w(LGW_FREQ_TO_TIME_INVERT,29); /* default 29 */
-      // lgw_reg_w(LGW_FRAME_SYNCH_GAIN,1); /* default 1 */
-      // lgw_reg_w(LGW_SYNCH_DETECT_TH,1); /* default 1 */
-      // lgw_reg_w(LGW_ZERO_PAD,0); /* default 0 */
-      _ = this.RegisterWrite(Registers.SNR_AVG_CST, 3); /* default 2 */
-                                                        //if (this.lorawan_public) { /* LoRa network */
-                                                        //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 3); /* default 1 */
-                                                        //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 4); /* default 2 */
-                                                        //} else { /* private network */
-      _ = this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 1); /* default 1 */
-      _ = this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 2); /* default 2 */
-                                                                  //}
+      // LoRa 'multi' demodulators setup 
+      // lgw_reg_w(LGW_PREAMBLE_SYMB1_NB,10); // default 10 
+      // lgw_reg_w(LGW_FREQ_TO_TIME_INVERT,29); // default 29 
+      // lgw_reg_w(LGW_FRAME_SYNCH_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_SYNCH_DETECT_TH,1); // default 1 
+      // lgw_reg_w(LGW_ZERO_PAD,0); // default 0 
+      _ = this.RegisterWrite(Registers.SNR_AVG_CST, 3); // default 2 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      //} else { // private network 
+      _ = this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      _ = this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      //}
 
-      // lgw_reg_w(LGW_PREAMBLE_FINE_TIMING_GAIN,1); /* default 1 */
-      // lgw_reg_w(LGW_ONLY_CRC_EN,1); /* default 1 */
-      // lgw_reg_w(LGW_PAYLOAD_FINE_TIMING_GAIN,2); /* default 2 */
-      // lgw_reg_w(LGW_TRACKING_INTEGRAL,0); /* default 0 */
-      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_RDX8,0); /* default 0 */
-      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_SF12_RDX4,4092); /* default 4092 */
-      // lgw_reg_w(LGW_MAX_PAYLOAD_LEN,255); /* default 255 */
+      // lgw_reg_w(LGW_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_ONLY_CRC_EN,1); // default 1 
+      // lgw_reg_w(LGW_PAYLOAD_FINE_TIMING_GAIN,2); // default 2 
+      // lgw_reg_w(LGW_TRACKING_INTEGRAL,0); // default 0 
+      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_RDX8,0); // default 0 
+      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_SF12_RDX4,4092); // default 4092 
+      // lgw_reg_w(LGW_MAX_PAYLOAD_LEN,255); // default 255 
 
-      /* LoRa standalone 'MBWSSF' demodulator setup */
-      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_SYMB1_NB,10); /* default 10 */
-      // lgw_reg_w(LGW_MBWSSF_FREQ_TO_TIME_INVERT,29); /* default 29 */
-      // lgw_reg_w(LGW_MBWSSF_FRAME_SYNCH_GAIN,1); /* default 1 */
-      // lgw_reg_w(LGW_MBWSSF_SYNCH_DETECT_TH,1); /* default 1 */
-      // lgw_reg_w(LGW_MBWSSF_ZERO_PAD,0); /* default 0 */
-      //if (this.lorawan_public) { /* LoRa network */
-      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 3); /* default 1 */
-      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 4); /* default 2 */
+      // LoRa standalone 'MBWSSF' demodulator setup 
+      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_SYMB1_NB,10); // default 10 
+      // lgw_reg_w(LGW_MBWSSF_FREQ_TO_TIME_INVERT,29); // default 29 
+      // lgw_reg_w(LGW_MBWSSF_FRAME_SYNCH_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_SYNCH_DETECT_TH,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_ZERO_PAD,0); // default 0 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
       //} else {
-      _ = this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 1); /* default 1 */
-      _ = this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 2); /* default 2 */
+      _ = this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      _ = this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
       //}
-      // lgw_reg_w(LGW_MBWSSF_ONLY_CRC_EN,1); /* default 1 */
-      // lgw_reg_w(LGW_MBWSSF_PAYLOAD_FINE_TIMING_GAIN,2); /* default 2 */
-      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_FINE_TIMING_GAIN,1); /* default 1 */
-      // lgw_reg_w(LGW_MBWSSF_TRACKING_INTEGRAL,0); /* default 0 */
-      // lgw_reg_w(LGW_MBWSSF_AGC_FREEZE_ON_DETECT,1); /* default 1 */
+      // lgw_reg_w(LGW_MBWSSF_ONLY_CRC_EN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_PAYLOAD_FINE_TIMING_GAIN,2); // default 2 
+      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_TRACKING_INTEGRAL,0); // default 0 
+      // lgw_reg_w(LGW_MBWSSF_AGC_FREEZE_ON_DETECT,1); // default 1 
 
-      /* Improvement of reference clock frequency error tolerance */
-      _ = this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_RDX4, 1); /* default 0 */
-      _ = this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_SF12_RDX4, 4094); /* default 4092 */
-      _ = this.RegisterWrite(Registers.CORR_MAC_GAIN, 7); /* default 5 */
+      // Improvement of reference clock frequency error tolerance 
+      _ = this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_RDX4, 1); // default 0 
+      _ = this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_SF12_RDX4, 4094); // default 4092 
+      _ = this.RegisterWrite(Registers.CORR_MAC_GAIN, 7); // default 5 
 
-      /* FSK datapath setup */
-      _ = this.RegisterWrite(Registers.FSK_RX_INVERT, 1); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_MODEM_INVERT_IQ, 1); /* default 0 */
+      // FSK datapath setup 
+      _ = this.RegisterWrite(Registers.FSK_RX_INVERT, 1); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_MODEM_INVERT_IQ, 1); // default 0 
 
-      /* FSK demodulator setup */
-      _ = this.RegisterWrite(Registers.FSK_RSSI_LENGTH, 4); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_PKT_MODE, 1); /* variable length, default 0 */
-      _ = this.RegisterWrite(Registers.FSK_CRC_EN, 1); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_DCFREE_ENC, 2); /* default 0 */
-                                                           // lgw_reg_w(LGW_FSK_CRC_IBM,0); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_ERROR_OSR_TOL, 10); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_PKT_LENGTH, 255); /* max packet length in variable length mode */
-                                                             // lgw_reg_w(LGW_FSK_NODE_ADRS,0); /* default 0 */
-                                                             // lgw_reg_w(LGW_FSK_BROADCAST,0); /* default 0 */
-                                                             // lgw_reg_w(LGW_FSK_AUTO_AFC_ON,0); /* default 0 */
-      _ = this.RegisterWrite(Registers.FSK_PATTERN_TIMEOUT_CFG, 128); /* sync timeout (allow 8 bytes preamble + 8 bytes sync word, default 0 */
+      // FSK demodulator setup 
+      _ = this.RegisterWrite(Registers.FSK_RSSI_LENGTH, 4); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_PKT_MODE, 1); // variable length, default 0 
+      _ = this.RegisterWrite(Registers.FSK_CRC_EN, 1); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_DCFREE_ENC, 2); // default 0 
+      // lgw_reg_w(LGW_FSK_CRC_IBM,0); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_ERROR_OSR_TOL, 10); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_PKT_LENGTH, 255); // max packet length in variable length mode 
+      // lgw_reg_w(LGW_FSK_NODE_ADRS,0); // default 0 
+      // lgw_reg_w(LGW_FSK_BROADCAST,0); // default 0 
+      // lgw_reg_w(LGW_FSK_AUTO_AFC_ON,0); // default 0 
+      _ = this.RegisterWrite(Registers.FSK_PATTERN_TIMEOUT_CFG, 128); // sync timeout (allow 8 bytes preamble + 8 bytes sync word, default 0 
 
-      /* TX general parameters */
-      _ = this.RegisterWrite(Registers.TX_START_DELAY, 1497); /* default 0 */
-      /* Calibrated value for 500KHz BW and notch filter disabled */
+      // TX general parameters 
+      _ = this.RegisterWrite(Registers.TX_START_DELAY, 1497); // default 0 
+      // Calibrated value for 500KHz BW and notch filter disabled 
 
-      /* TX LoRa */
-      // lgw_reg_w(LGW_TX_MODE,0); /* default 0 */
-      _ = this.RegisterWrite(Registers.TX_SWAP_IQ, 1); /* "normal" polarity; default 0 */
-                                                       //if (this.lorawan_public) { /* LoRa network */
-                                                       //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 3); /* default 1 */
-                                                       //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 4); /* default 2 */
-                                                       //} else { /* Private network */
-      _ = this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 1); /* default 1 */
-      _ = this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 2); /* default 2 */
+      // TX LoRa 
+      // lgw_reg_w(LGW_TX_MODE,0); // default 0 
+      _ = this.RegisterWrite(Registers.TX_SWAP_IQ, 1); // "normal" polarity; default 0 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      //} else { // Private network 
+      _ = this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      _ = this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
       //}
 
-      /* TX FSK */
-      // lgw_reg_w(LGW_FSK_TX_GAUSSIAN_EN,1); /* default 1 */
-      _ = this.RegisterWrite(Registers.FSK_TX_GAUSSIAN_SELECT_BT, 2); /* Gaussian filter always on TX, default 0 */
-                                                   // lgw_reg_w(LGW_FSK_TX_PATTERN_EN,1); /* default 1 */
-                                                   // lgw_reg_w(LGW_FSK_TX_PREAMBLE_SEQ,0); /* default 0 */
+      // TX FSK 
+      // lgw_reg_w(LGW_FSK_TX_GAUSSIAN_EN,1); // default 1 
+      _ = this.RegisterWrite(Registers.FSK_TX_GAUSSIAN_SELECT_BT, 2); // Gaussian filter always on TX, default 0 
+      // lgw_reg_w(LGW_FSK_TX_PATTERN_EN,1); // default 1 
+      // lgw_reg_w(LGW_FSK_TX_PREAMBLE_SEQ,0); // default 0 
     }
 
-    /*private void ReceiveRunner() {
+    private void ReceiveRunner() {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880alora.ReceiveRunner(): gestartet!");
       while (this.ReceiveRunnerAlive) {
         if (this.deviceStarted) {
@@ -1175,11 +1167,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
           Thread.Sleep(1);
         }
       }
-    }*/
+    }
     #endregion
 
     #region Hardware IO
-    /*private void Reset() {
+    private void Reset() {
       this.PinReset.Write(true);
       Thread.Sleep(150);
       this.PinReset.Write(false);
@@ -1193,13 +1185,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       _ = this.SingleSPI(0, 128);
       _ = this.SingleSPI(0, 0);
       //this.PinReset.PinMode = GpioPinDriveMode.Input;
-    }*/
+    }
 
-    /*private void SetupIO() {
+    private void SetupIO() {
       Pi.Spi.SetProperty(this.config["spichan"] + "Frequency", 100000.ToString());
       this.PinSlaveSelect.PinMode = GpioPinDriveMode.Output;
       this.PinReset.PinMode = GpioPinDriveMode.Output;
-    }*/
+    }
 
     private void Selectreceiver() => this.PinSlaveSelect.Write(false);
 
@@ -1234,5 +1226,5 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       this.receiveThread.Start();
     }
     #endregion
-  }
+  }*/
 }

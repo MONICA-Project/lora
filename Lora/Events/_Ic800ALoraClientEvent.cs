@@ -1,6 +1,6 @@
 ﻿using System;
 using Fraunhofer.Fit.Iot.Lora.lib;
-using static Fraunhofer.Fit.Iot.Lora.lib.Ic880alora;
+//using static Fraunhofer.Fit.Iot.Lora.lib.Ic880alora;
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {
   /*public struct IC880ADataFrame {

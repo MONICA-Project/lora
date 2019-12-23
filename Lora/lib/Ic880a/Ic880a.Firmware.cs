@@ -1,11 +1,9 @@
 ﻿using System;
 
-using BlubbFish.Utils;
-
-namespace Fraunhofer.Fit.Iot.Lora.lib {
-  /*public partial class Ic880alora {
+namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
+  public partial class Ic880a {
     public static class Firmware {
-      public static Firmwaredata CAL = new Firmwaredata(1, new Byte[] { 
+      public static Firmwaredata CAL = new Firmwaredata(1, new Byte[8192] {
         0x8A, 0x51, 0x6F, 0x28, 0x00, 0xB0, 0x8A, 0xC0, 0x04, 0x88, 0x84, 0x0A, 0x82, 0x47, 0x00, 0xF4,
         0x18, 0x74, 0x1C, 0xB4, 0x1E, 0xF4, 0x20, 0x34, 0x22, 0x74, 0x23, 0xB4, 0x24, 0x74, 0x25, 0xB4,
         0x26, 0xB4, 0x27, 0xF4, 0x28, 0x74, 0x28, 0x74, 0x29, 0xB4, 0x2A, 0xB4, 0x2A, 0xB4, 0x2B, 0xF4,
@@ -520,7 +518,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         0x86, 0xC0, 0x08, 0x40, 0x21, 0xC8, 0x88, 0x80, 0x23, 0x08, 0x80, 0x38, 0x85, 0xC0, 0x08, 0x40
       }, 8192, 2, 0x20);
 
-      public static Firmwaredata ARB = new Firmwaredata(0, new Byte[] { 
+      public static Firmwaredata ARB = new Firmwaredata(0, new Byte[8192] {
         0x8A, 0x51, 0xAE, 0x6E, 0x00, 0xB0, 0x8A, 0xC0, 0x04, 0x88, 0x84, 0x0A, 0x82, 0x47, 0x00, 0xF4,
         0x07, 0xB4, 0x06, 0x74, 0x05, 0x74, 0x04, 0x34, 0x03, 0x74, 0x02, 0x34, 0x01, 0x34, 0x00, 0xF4,
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
@@ -1032,10 +1030,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
-        0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF 
+        0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF
       }, 8192, 1, 0x20);
 
-      public static Firmwaredata AGC = new Firmwaredata(1, new Byte[] { 
+      public static Firmwaredata AGC = new Firmwaredata(1, new Byte[8192] {
         0x8A, 0x51, 0x11, 0x28, 0xFF, 0xBF, 0xFF, 0xBF, 0x80, 0x40, 0x03, 0x4E, 0x83, 0x52, 0x03, 0x53,
         0xAC, 0x00, 0x04, 0x88, 0xAD, 0x40, 0x0A, 0xC8, 0xAE, 0x40, 0x01, 0x88, 0xAF, 0x80, 0x8A, 0x51,
         0x13, 0x68, 0x8A, 0x51, 0x59, 0x2D, 0x8B, 0xDC, 0x1A, 0x68, 0xA0, 0xE0, 0x8A, 0x51, 0x27, 0x60,
@@ -1547,66 +1545,168 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
         0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF,
-        0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF 
+        0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF, 0xFF, 0xBF
       }, 8192, 4, 0x20);
     }
 
-    public struct Firmwaredata {
-      public Byte Mcu;
-      public Byte[] Data;
-      public UInt16 Size;
-      public Byte Version;
-      public Byte Address;
-      public Firmwaredata(Byte mcu, Byte[] data, UInt16 size, Byte version, Byte addr) {
-        this.Mcu = mcu;
-        this.Data = data;
-        this.Size = size;
-        this.Version = version;
-        this.Address = addr;
-      }
-    }
-
-    private Boolean LoadFirmware(Firmwaredata fw) {
+    private void LoadFirmware(Firmwaredata fw) {
       LGWRegisters reg_rst;
       LGWRegisters reg_sel;
 
       if(fw.Mcu == 0) {
         if(fw.Size != 8192) {
-          Helper.WriteError("ERROR: NOT A VALID SIZE FOR MCU ARG FIRMWARE");
-          return false;
+          throw new Exception("ERROR: NOT A VALID SIZE FOR MCU ARG FIRMWARE");
         }
         reg_rst = Registers.MCU_RST_0;
         reg_sel = Registers.MCU_SELECT_MUX_0;
       } else if(fw.Mcu == 1) {
         if(fw.Size != 8192) {
-          Helper.WriteError("ERROR: NOT A VALID SIZE FOR MCU AGC FIRMWARE");
-          return false;
+          throw new Exception("ERROR: NOT A VALID SIZE FOR MCU AGC FIRMWARE");
         }
         reg_rst = Registers.MCU_RST_1;
         reg_sel = Registers.MCU_SELECT_MUX_1;
       } else {
-        Helper.WriteError("ERROR: NOT A VALID TARGET FOR LOADING FIRMWARE");
-        return false;
+        throw new Exception("ERROR: NOT A VALID TARGET FOR LOADING FIRMWARE");
       }
 
-      _ = this.RegisterWrite(reg_rst, 1); // reset the targeted MCU 
+      this.RegisterWrite(reg_rst, 1); // reset the targeted MCU 
 
-      _ = this.RegisterWrite(reg_sel, 0); // set mux to access MCU program RAM and set address to 0 
-      _ = this.RegisterWrite(Registers.MCU_PROM_ADDR, 0);
+      this.RegisterWrite(reg_sel, 0); // set mux to access MCU program RAM and set address to 0 
+      this.RegisterWrite(Registers.MCU_PROM_ADDR, 0);
 
-      _ = this.RegisterWriteArray(Registers.MCU_PROM_DATA, fw.Data, fw.Size);      // write the program in one burst 
+      this.RegisterWriteArray(Registers.MCU_PROM_DATA, fw.Data);      // write the program in one burst 
 
       _ = this.RegisterRead(Registers.MCU_PROM_DATA);       // Read back firmware code for check bug workaround 
       Byte[] fw_check = this.RegisterReadArray(Registers.MCU_PROM_DATA, fw.Size);
       for(Int32 i = 0; i < fw.Size; i++) {
         if(fw.Data[i] != fw_check[i]) {
           Console.WriteLine("[" + i + "]in: " + fw.Data[i].ToString("X2") + " out: " + fw_check[i].ToString("X2"));
-          Helper.WriteError("ERROR: Failed to load fw " + fw.Mcu);
-          return false;
+          throw new Exception("ERROR: Failed to load fw " + fw.Mcu);
         }
       }
-      _ = this.RegisterWrite(reg_sel, 1);      // give back control of the MCU program ram to the MCU 
-      return true;
+      this.RegisterWrite(reg_sel, 1);      // give back control of the MCU program ram to the MCU 
     }
-  }*/
+
+    private void LoadAdjustConstants() {
+      // I/Q path setup 
+      // lgw_reg_w(LGW_RX_INVERT_IQ,0); // default 0 
+      // lgw_reg_w(LGW_MODEM_INVERT_IQ,1); // default 1
+      // lgw_reg_w(LGW_CHIRP_INVERT_RX,1); // default 1 
+      // lgw_reg_w(LGW_RX_EDGE_SELECT,0); // default 0 
+      // lgw_reg_w(LGW_MBWSSF_MODEM_INVERT_IQ,0); // default 0 
+      // lgw_reg_w(LGW_DC_NOTCH_EN,1); // default 1 
+      this.RegisterWrite(Registers.RSSI_BB_FILTER_ALPHA, 6); // default 7 
+      this.RegisterWrite(Registers.RSSI_DEC_FILTER_ALPHA, 7); // default 5 
+      this.RegisterWrite(Registers.RSSI_CHANN_FILTER_ALPHA, 7); // default 8 
+      this.RegisterWrite(Registers.RSSI_BB_DEFAULT_VALUE, 23); // default 32
+      this.RegisterWrite(Registers.RSSI_CHANN_DEFAULT_VALUE, 85); // default 100 
+      this.RegisterWrite(Registers.RSSI_DEC_DEFAULT_VALUE, 66); // default 100 
+      this.RegisterWrite(Registers.DEC_GAIN_OFFSET, 7); // default 8 
+      this.RegisterWrite(Registers.CHAN_GAIN_OFFSET, 6); // default 7 
+
+      // Correlator setup 
+      // lgw_reg_w(LGW_CORR_DETECT_EN,126); // default 126 
+      // lgw_reg_w(LGW_CORR_NUM_SAME_PEAK,4); // default 4 
+      // lgw_reg_w(LGW_CORR_MAC_GAIN,5); // default 5 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF6,0); // default 0 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF7,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF8,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF9,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF10,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF11,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SAME_PEAKS_OPTION_SF12,1); // default 1 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF6,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF7,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF8,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF9,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF10,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF11,4); // default 4 
+      // lgw_reg_w(LGW_CORR_SIG_NOISE_RATIO_SF12,4); // default 4 
+
+      // LoRa 'multi' demodulators setup 
+      // lgw_reg_w(LGW_PREAMBLE_SYMB1_NB,10); // default 10 
+      // lgw_reg_w(LGW_FREQ_TO_TIME_INVERT,29); // default 29 
+      // lgw_reg_w(LGW_FRAME_SYNCH_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_SYNCH_DETECT_TH,1); // default 1 
+      // lgw_reg_w(LGW_ZERO_PAD,0); // default 0 
+      this.RegisterWrite(Registers.SNR_AVG_CST, 3); // default 2 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      //} else { // private network 
+      this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      //}
+
+      // lgw_reg_w(LGW_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_ONLY_CRC_EN,1); // default 1 
+      // lgw_reg_w(LGW_PAYLOAD_FINE_TIMING_GAIN,2); // default 2 
+      // lgw_reg_w(LGW_TRACKING_INTEGRAL,0); // default 0 
+      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_RDX8,0); // default 0 
+      // lgw_reg_w(LGW_ADJUST_MODEM_START_OFFSET_SF12_RDX4,4092); // default 4092 
+      // lgw_reg_w(LGW_MAX_PAYLOAD_LEN,255); // default 255 
+
+      // LoRa standalone 'MBWSSF' demodulator setup 
+      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_SYMB1_NB,10); // default 10 
+      // lgw_reg_w(LGW_MBWSSF_FREQ_TO_TIME_INVERT,29); // default 29 
+      // lgw_reg_w(LGW_MBWSSF_FRAME_SYNCH_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_SYNCH_DETECT_TH,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_ZERO_PAD,0); // default 0 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      //} else {
+      this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      //}
+      // lgw_reg_w(LGW_MBWSSF_ONLY_CRC_EN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_PAYLOAD_FINE_TIMING_GAIN,2); // default 2 
+      // lgw_reg_w(LGW_MBWSSF_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
+      // lgw_reg_w(LGW_MBWSSF_TRACKING_INTEGRAL,0); // default 0 
+      // lgw_reg_w(LGW_MBWSSF_AGC_FREEZE_ON_DETECT,1); // default 1 
+
+      // Improvement of reference clock frequency error tolerance 
+      this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_RDX4, 1); // default 0 
+      this.RegisterWrite(Registers.ADJUST_MODEM_START_OFFSET_SF12_RDX4, 4094); // default 4092 
+      this.RegisterWrite(Registers.CORR_MAC_GAIN, 7); // default 5 
+
+      // FSK datapath setup 
+      this.RegisterWrite(Registers.FSK_RX_INVERT, 1); // default 0 
+      this.RegisterWrite(Registers.FSK_MODEM_INVERT_IQ, 1); // default 0 
+
+      // FSK demodulator setup 
+      this.RegisterWrite(Registers.FSK_RSSI_LENGTH, 4); // default 0 
+      this.RegisterWrite(Registers.FSK_PKT_MODE, 1); // variable length, default 0 
+      this.RegisterWrite(Registers.FSK_CRC_EN, 1); // default 0 
+      this.RegisterWrite(Registers.FSK_DCFREE_ENC, 2); // default 0 
+      // lgw_reg_w(LGW_FSK_CRC_IBM,0); // default 0 
+      this.RegisterWrite(Registers.FSK_ERROR_OSR_TOL, 10); // default 0 
+      this.RegisterWrite(Registers.FSK_PKT_LENGTH, 255); // max packet length in variable length mode 
+      // lgw_reg_w(LGW_FSK_NODE_ADRS,0); // default 0 
+      // lgw_reg_w(LGW_FSK_BROADCAST,0); // default 0 
+      // lgw_reg_w(LGW_FSK_AUTO_AFC_ON,0); // default 0 
+      this.RegisterWrite(Registers.FSK_PATTERN_TIMEOUT_CFG, 128); // sync timeout (allow 8 bytes preamble + 8 bytes sync word, default 0 
+
+      // TX general parameters 
+      this.RegisterWrite(Registers.TX_START_DELAY, 1497); // default 0 
+      // Calibrated value for 500KHz BW and notch filter disabled 
+
+      // TX LoRa 
+      // lgw_reg_w(LGW_TX_MODE,0); // default 0 
+      this.RegisterWrite(Registers.TX_SWAP_IQ, 1); // "normal" polarity; default 0 
+      //if (this.lorawan_public) { // LoRa network 
+      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      //} else { // Private network 
+      this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+      this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      //}
+
+      // TX FSK 
+      // lgw_reg_w(LGW_FSK_TX_GAUSSIAN_EN,1); // default 1 
+      this.RegisterWrite(Registers.FSK_TX_GAUSSIAN_SELECT_BT, 2); // Gaussian filter always on TX, default 0 
+      // lgw_reg_w(LGW_FSK_TX_PATTERN_EN,1); // default 1 
+      // lgw_reg_w(LGW_FSK_TX_PREAMBLE_SEQ,0); // default 0 
+    }
+  }
 }

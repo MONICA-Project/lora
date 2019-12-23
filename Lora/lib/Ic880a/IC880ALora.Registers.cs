@@ -1,8 +1,8 @@
 ﻿using System;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib {
-  public partial class Ic880alora {
-    [Obsolete()]
+  /*public partial class Ic880alora {
+    
     public static class Registers {
       #region Global Registers
       public static LGWRegisters PAGE_REG = new LGWRegisters(-1, 0, 0, false, 2, false, 0);
@@ -342,7 +342,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       public static LGWRegisters DATA_MNGT_CPT_FRAME_READEN = new LGWRegisters(2, 97, 0, false, 5, true, 0);
       #endregion
     }
-    [Obsolete()]
+   
     public struct LGWRegisters {
       /// <summary>
       /// page containing the register (-1 for all pages)
@@ -413,5 +413,5 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       public static Byte RX_PLL_BW = 0;
       public static UInt32 FRAC_32MHz = 15625;
     }
-  }
+  }*/
 }
