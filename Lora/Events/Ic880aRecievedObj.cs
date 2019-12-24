@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+
 using Fraunhofer.Fit.Iot.Lora.lib.Ic880a;
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {
-  class Ic880aRecievedObj : RecievedData {
+  public class Ic880aRecievedObj : RecievedData {
     public Byte Interface {
       get; set;
     }
@@ -50,6 +49,8 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public UInt16 Calculatedcrc {
       get; set;
     }
+
+    public override String ToString() => "IC880A-" + this.Modulation + ": RSSI: " + this.Rssi + " dBm, SNR: " + this.Snr + "/"+this.SnrMin+"/"+this.SnrMax+" dB, Freq: " + this.Frequency + " Hz [If: "+this.Interface+", Chain: "+this.Radio+"], BW: "+this.Bandwidth+", SF: "+this.Spreadingfactor+", CR: "+this.CodingRate+", CRC: " + this.Crc + "["+this.CrcStatus+", "+this.Calculatedcrc+"], Time: "+this.Time+" us, Data: " + BitConverter.ToString(this.Data).Replace("-", " ");
 
 
     #region Static helpers

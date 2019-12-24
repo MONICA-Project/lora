@@ -54,6 +54,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.PageSwitch(0);
       this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
       this.StartRadio();
+      this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.Begin(): Succsessfull init Ic880a-board with SX1231 Chip!");
     }
 
     public override void Dispose() {
