@@ -7,7 +7,6 @@ using Unosquare.WiringPi;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
   public partial class Ic880a {
-    private GpioPin PinSlaveSelect;
     private GpioPin PinReset;
 
     private readonly Boolean[] _radioEnabled = new Boolean[2];
@@ -35,6 +34,11 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     #endregion
 
     private Boolean _lbt_enabled = false;
+    private SByte _lbt_rssi_offset_dB = 0;
+    private UInt32 _lbt_start_freq = 0;
+    private SByte _lbt_rssi_target_dBm = 0;
+    private Byte _lbt_nb_active_channel = 0;
+    private readonly LbtChan[] _lbt_channel_cfg = new LbtChan[8];
 
     private Thread _recieverThread;
     private Boolean _recieverThreadRunning = false;
@@ -48,9 +52,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private void ParseConfig() {
       try {
         this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
-        this.PinSlaveSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);  //Physical pin 24, BCM pin  8, Wiring Pi pin 10 (SPI0 CE0)
-        this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);          //Physical pin 29, BCM pin  5, Wiring Pi pin 21 (GPCLK1)
-
+        this.PinChipSelect = (GpioPin)Pi.Gpio[Int32.Parse(this.config["pin_sspin"])];  //Physical pin 24, BCM pin  8, Wiring Pi pin 10 (SPI0 CE0)
+        this.PinReset = (GpioPin)Pi.Gpio[Int32.Parse(this.config["pin_rst"])];          //Physical pin 29, BCM pin  5, Wiring Pi pin 21 (GPCLK1)
         if(this.config.ContainsKey("frequency0")) {
           this._radioEnabled[0] = true;
           this._radioFrequency[0] = UInt32.Parse(this.config["frequency0"]);

@@ -56,7 +56,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.StartRadio();
     }
 
-
     public override void Dispose() {
       this._deviceStarted = false;
       this._recieverThreadRunning = false;
@@ -104,7 +103,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         /* Start SX1301 counter and LBT FSM at the same time to be in sync */
         this.RegisterWrite(Registers.CLK32M_EN, 0);
-        this.LbtStart();
+        this.RegisterFpgaWrite(Registers.FPGA_CTRL_FEATURE_START, 1);
       }
 
       this.RegisterWrite(Registers.GLOBAL_EN, 1); // Enable clocks 
@@ -379,16 +378,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     }
 
     private void LbtSetup() {
-      /*Int32 x, i, val;
+      Int32 x, i, val;
       UInt32 freq_offset;
 
       // Check if LBT feature is supported by FPGA
-      if(((((Byte)this.RegisterRead(Registers.FPGA_FEATURE)) >> (2)) & ((1 << (1)) - 1)) != 1) {
+      if(((((Byte)this.RegisterFpgaRead(Registers.FPGA_FEATURE)) >> (2)) & ((1 << (1)) - 1)) != 1) {
         throw new Exception("ERROR: No support for LBT in FPGA");
       }
 
       // Get FPGA lowest frequency for LBT channels
-      val = this.RegisterRead(Registers.LBT_INITIAL_FREQ);
+      val = this.RegisterFpgaRead(Registers.FPGA_LBT_INITIAL_FREQ);
       this._lbt_start_freq = val switch
       {
         0 => 915000000,
@@ -397,70 +396,43 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       };
 
       // Configure SX127x for FSK 
-      x = lgw_setup_sx127x(lbt_start_freq, MOD_FSK, LGW_SX127X_RXBW_100K_HZ, lbt_rssi_offset_dB); // 200KHz LBT channels 
-      if(x != LGW_REG_SUCCESS) {
-        DEBUG_MSG("ERROR: Failed to configure SX127x for LBT\n");
-        return LGW_LBT_ERROR;
-      }
+      this.RegisterSx127xSetup(this._lbt_start_freq, 0x20, Sx127xRxbwE.LGW_SX127X_RXBW_100K_HZ, this._lbt_rssi_offset_dB); // 200KHz LBT channels 
+
 
       // Configure FPGA for LBT 
-      val = -2 * lbt_rssi_target_dBm; // Convert RSSI target in dBm to FPGA register format 
-      x = lgw_fpga_reg_w(LGW_FPGA_RSSI_TARGET, val);
-      if(x != LGW_REG_SUCCESS) {
-        DEBUG_MSG("ERROR: Failed to configure FPGA for LBT\n");
-        return LGW_LBT_ERROR;
-      }
+      val = -2 * this._lbt_rssi_target_dBm; // Convert RSSI target in dBm to FPGA register format 
+      this.RegisterFpgaWrite(Registers.FPGA_RSSI_TARGET, val);
       // Set default values for non-active LBT channels 
-      for(i = lbt_nb_active_channel; i < LBT_CHANNEL_FREQ_NB; i++) {
-        lbt_channel_cfg[i].freq_hz = lbt_start_freq;
-        lbt_channel_cfg[i].scan_time_us = 128; // fastest scan for non-active channels 
+      for(i = this._lbt_nb_active_channel; i < 8; i++) {
+        this._lbt_channel_cfg[i].freq_hz = this._lbt_start_freq;
+        this._lbt_channel_cfg[i].scan_time_us = 128; // fastest scan for non-active channels 
       }
       // Configure FPGA for both active and non-active LBT channels 
-      for(i = 0; i < LBT_CHANNEL_FREQ_NB; i++) {
+      for(i = 0; i < 8; i++) {
         // Check input parameters 
-        if(lbt_channel_cfg[i].freq_hz < lbt_start_freq) {
-          DEBUG_PRINTF("ERROR: LBT channel frequency is out of range (%u)\n", lbt_channel_cfg[i].freq_hz);
-          return LGW_LBT_ERROR;
+        if(this._lbt_channel_cfg[i].freq_hz < this._lbt_start_freq) {
+          throw new ArgumentException("ERROR: LBT channel frequency is out of range ("+ this._lbt_channel_cfg[i].freq_hz + ")");
         }
-        if((lbt_channel_cfg[i].scan_time_us != 128) && (lbt_channel_cfg[i].scan_time_us != 5000)) {
-          DEBUG_PRINTF("ERROR: LBT channel scan time is not supported (%u)\n", lbt_channel_cfg[i].scan_time_us);
-          return LGW_LBT_ERROR;
+        if(this._lbt_channel_cfg[i].scan_time_us != 128 && this._lbt_channel_cfg[i].scan_time_us != 5000) {
+          throw new ArgumentException("ERROR: LBT channel scan time is not supported ("+ this._lbt_channel_cfg[i].scan_time_us + ")");
         }
         // Configure 
-        freq_offset = (lbt_channel_cfg[i].freq_hz - lbt_start_freq) / 100E3; // 100kHz unit 
-        x = lgw_fpga_reg_w(LGW_FPGA_LBT_CH0_FREQ_OFFSET + i, (int32_t)freq_offset);
-        if(x != LGW_REG_SUCCESS) {
-          DEBUG_PRINTF("ERROR: Failed to configure FPGA for LBT channel %d (freq offset)\n", i);
-          return LGW_LBT_ERROR;
-        }
-        if(lbt_channel_cfg[i].scan_time_us == 5000) { // configured to 128 by default 
-          x = lgw_fpga_reg_w(LGW_FPGA_LBT_SCAN_TIME_CH0 + i, 1);
-          if(x != LGW_REG_SUCCESS) {
-            DEBUG_PRINTF("ERROR: Failed to configure FPGA for LBT channel %d (freq offset)\n", i);
-            return LGW_LBT_ERROR;
-          }
+        freq_offset = (UInt32)((this._lbt_channel_cfg[i].freq_hz - this._lbt_start_freq) / 100E3); // 100kHz unit 
+        this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_CH" + i + "_FREQ_OFFSET"), (Int32)freq_offset);
+        if(this._lbt_channel_cfg[i].scan_time_us == 5000) { // configured to 128 by default 
+          this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_SCAN_TIME_CH" + i), 1);
         }
       }
 
-      DEBUG_MSG("Note: LBT configuration:\n");
-      DEBUG_PRINTF("\tlbt_enable: %d\n", lbt_enable);
-      DEBUG_PRINTF("\tlbt_nb_active_channel: %d\n", lbt_nb_active_channel);
-      DEBUG_PRINTF("\tlbt_start_freq: %d\n", lbt_start_freq);
-      DEBUG_PRINTF("\tlbt_rssi_target: %d\n", lbt_rssi_target_dBm);
-      for(i = 0; i < LBT_CHANNEL_FREQ_NB; i++) {
-        DEBUG_PRINTF("\tlbt_channel_cfg[%d].freq_hz: %u\n", i, lbt_channel_cfg[i].freq_hz);
-        DEBUG_PRINTF("\tlbt_channel_cfg[%d].scan_time_us: %u\n", i, lbt_channel_cfg[i].scan_time_us);
+      Console.WriteLine("Note: LBT configuration:");
+      Console.WriteLine("\tlbt_enable: " + this._lbt_enabled);
+      Console.WriteLine("\tlbt_nb_active_channel: " + this._lbt_nb_active_channel);
+      Console.WriteLine("\tlbt_start_freq: " + this._lbt_start_freq);
+      Console.WriteLine("\tlbt_rssi_target: " + this._lbt_rssi_target_dBm);
+      for(i = 0; i < 8; i++) {
+        Console.WriteLine("\tlbt_channel_cfg[" + i + "].freq_hz: " + this._lbt_channel_cfg[i].freq_hz);
+        Console.WriteLine("\tlbt_channel_cfg[" + i + "].scan_time_us: "+ this._lbt_channel_cfg[i].scan_time_us);
       }
-
-      return LGW_LBT_SUCCESS;*/
-
-    }
-
-    private void LbtStart() {
-      /*Int32 x = lgw_fpga_reg_w(LGW_FPGA_CTRL_FEATURE_START, 1);
-      if(x != LGW_REG_SUCCESS) {
-        throw new Exception("ERROR: Failed to start LBT FSM");
-      }*/
     }
 
     private void Reset() {
@@ -690,7 +662,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     private void SetupIO() {
       Pi.Spi.SetProperty("Channel" + this.SpiChannel.Channel.ToString() + "Frequency", 100000.ToString());
-      this.PinSlaveSelect.PinMode = GpioPinDriveMode.Output;
+      this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
       this.PinReset.PinMode = GpioPinDriveMode.Output;
       this.PinReset.Write(GpioPinValue.High);
     }

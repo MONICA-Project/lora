@@ -62,6 +62,35 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       SX1257 = 1
     }
 
+    enum Sx127xRxbwE {
+      LGW_SX127X_RXBW_2K6_HZ,
+      LGW_SX127X_RXBW_3K1_HZ,
+      LGW_SX127X_RXBW_3K9_HZ,
+      LGW_SX127X_RXBW_5K2_HZ,
+      LGW_SX127X_RXBW_6K3_HZ,
+      LGW_SX127X_RXBW_7K8_HZ,
+      LGW_SX127X_RXBW_10K4_HZ,
+      LGW_SX127X_RXBW_12K5_HZ,
+      LGW_SX127X_RXBW_15K6_HZ,
+      LGW_SX127X_RXBW_20K8_HZ,
+      LGW_SX127X_RXBW_25K_HZ,
+      LGW_SX127X_RXBW_31K3_HZ,
+      LGW_SX127X_RXBW_41K7_HZ,
+      LGW_SX127X_RXBW_50K_HZ,
+      LGW_SX127X_RXBW_62K5_HZ,
+      LGW_SX127X_RXBW_83K3_HZ,
+      LGW_SX127X_RXBW_100K_HZ,
+      LGW_SX127X_RXBW_125K_HZ,
+      LGW_SX127X_RXBW_166K7_HZ,
+      LGW_SX127X_RXBW_200K_HZ,
+      LGW_SX127X_RXBW_250K_HZ
+    };
+
+    public struct LbtChan {
+      public UInt32 freq_hz;
+      public UInt16 scan_time_us;
+    };
+
     public class LGWRegisters {
       /// <summary>
       /// page containing the register (-1 for all pages)

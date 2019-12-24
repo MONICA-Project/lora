@@ -38,7 +38,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     protected void SPIwriteRegister(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), new Byte[] { data }, 1);
 
-    protected void SPIwriteRegisterRaw(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, address, new Byte[] { data }, 1);
+    protected void SPIwriteRegisterRaw(Byte address, Byte data, Byte mux = 0) => _ = mux == 0 ? this.MultiSPI(SPICommands.Write, address, new Byte[] { data }, 1) : this.MultiSPIMux(SPICommands.Write, address, new Byte[] { data }, 1, mux);
 
     protected Int16 SPIgetRegValue(Byte address, Byte msb = 7, Byte lsb = 0) {
       if(msb > 7 || lsb > 7 || lsb > msb) {
@@ -78,7 +78,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     protected void SPIwriteRegisterBurst(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), data, (UInt16)data.Length);
 
-    protected void SPIwriteRegisterBurstRaw(Byte address, Byte[] data) => this.MultiSPI(SPICommands.Write, address, data, (UInt16)data.Length);
+    protected void SPIwriteRegisterBurstRaw(Byte address, Byte[] data, Byte mux = 0) => _ = mux == 0 ? this.MultiSPI(SPICommands.Write, address, data, (UInt16)data.Length) : this.MultiSPIMux(SPICommands.Write, address, data, (UInt16)data.Length, mux);
 
     private Byte[] MultiSPI(Byte cmd, Byte address, Byte[] value, UInt16 size) {
       Byte[] tx = new Byte[size + 1];

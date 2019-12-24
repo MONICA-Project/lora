@@ -345,7 +345,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       #region FPGA Registers
       public static FpgaRegisters FPGA_SOFT_RESET = new FpgaRegisters(-1, 0, 0, false, 1, false, 0, 0x1);
       public static FpgaRegisters FPGA_FEATURE = new FpgaRegisters(-1, 0, 1, false, 4, true, 0, 0x1);
-      public static FpgaRegisters LBT_INITIAL_FREQ = new FpgaRegisters(-1, 0, 5, false, 3, true, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_INITIAL_FREQ = new FpgaRegisters(-1, 0, 5, false, 3, true, 0, 0x1);
       public static FpgaRegisters FPGA_VERSION = new FpgaRegisters(-1, 1, 0, false, 8, true, 0, 0x1);
       public static FpgaRegisters FPGA_STATUS = new FpgaRegisters(-1, 2, 0, false, 8, true, 0, 0x1);
       public static FpgaRegisters FPGA_CTRL_FEATURE_START = new FpgaRegisters(-1, 3, 0, false, 1, false, 0, 0x1);
@@ -356,31 +356,31 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       public static FpgaRegisters FPGA_CTRL_INVERT_IQ = new FpgaRegisters(-1, 3, 5, false, 1, false, 0, 0x1);
       public static FpgaRegisters FPGA_CTRL_ACCESS_HISTO_MEM = new FpgaRegisters(-1, 3, 6, false, 1, false, 0, 0x1);
       public static FpgaRegisters FPGA_CTRL_CLEAR_HISTO_MEM = new FpgaRegisters(-1, 3, 7, false, 1, false, 0, 0x1);
-      public static FpgaRegisters HISTO_RAM_ADDR = new FpgaRegisters(-1, 4, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters HISTO_RAM_DATA = new FpgaRegisters(-1, 5, 0, false, 8, true, 0, 0x1);
-      public static FpgaRegisters HISTO_NB_READ = new FpgaRegisters(-1, 8, 0, false, 16, false, 1000, 0x1);
-      public static FpgaRegisters LBT_TIMESTAMP_CH = new FpgaRegisters(-1, 14, 0, false, 16, true, 0, 0x1);
-      public static FpgaRegisters LBT_TIMESTAMP_SELECT_CH = new FpgaRegisters(-1, 17, 0, false, 4, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH0_FREQ_OFFSET = new FpgaRegisters(-1, 18, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH1_FREQ_OFFSET = new FpgaRegisters(-1, 19, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH2_FREQ_OFFSET = new FpgaRegisters(-1, 20, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH3_FREQ_OFFSET = new FpgaRegisters(-1, 21, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH4_FREQ_OFFSET = new FpgaRegisters(-1, 22, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH5_FREQ_OFFSET = new FpgaRegisters(-1, 23, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH6_FREQ_OFFSET = new FpgaRegisters(-1, 24, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_CH7_FREQ_OFFSET = new FpgaRegisters(-1, 25, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters SCAN_FREQ_OFFSET = new FpgaRegisters(-1, 26, 0, false, 8, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH0 = new FpgaRegisters(-1, 28, 0, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH1 = new FpgaRegisters(-1, 28, 1, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH2 = new FpgaRegisters(-1, 28, 2, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH3 = new FpgaRegisters(-1, 28, 3, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH4 = new FpgaRegisters(-1, 28, 4, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH5 = new FpgaRegisters(-1, 28, 5, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH6 = new FpgaRegisters(-1, 28, 6, false, 1, false, 0, 0x1);
-      public static FpgaRegisters LBT_SCAN_TIME_CH7 = new FpgaRegisters(-1, 28, 7, false, 1, false, 0, 0x1);
-      public static FpgaRegisters RSSI_TARGET = new FpgaRegisters(-1, 30, 0, false, 8, false, 160, 0x1);
-      public static FpgaRegisters HISTO_SCAN_FREQ = new FpgaRegisters(-1, 31, 0, false, 24, false, 0, 0x1);
-      public static FpgaRegisters NOTCH_FREQ_OFFSET = new FpgaRegisters(-1, 34, 0, false, 6, false, 0, 0x1);
+      public static FpgaRegisters FPGA_HISTO_RAM_ADDR = new FpgaRegisters(-1, 4, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_HISTO_RAM_DATA = new FpgaRegisters(-1, 5, 0, false, 8, true, 0, 0x1);
+      public static FpgaRegisters FPGA_HISTO_NB_READ = new FpgaRegisters(-1, 8, 0, false, 16, false, 1000, 0x1);
+      public static FpgaRegisters FPGA_LBT_TIMESTAMP_CH = new FpgaRegisters(-1, 14, 0, false, 16, true, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_TIMESTAMP_SELECT_CH = new FpgaRegisters(-1, 17, 0, false, 4, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH0_FREQ_OFFSET = new FpgaRegisters(-1, 18, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH1_FREQ_OFFSET = new FpgaRegisters(-1, 19, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH2_FREQ_OFFSET = new FpgaRegisters(-1, 20, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH3_FREQ_OFFSET = new FpgaRegisters(-1, 21, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH4_FREQ_OFFSET = new FpgaRegisters(-1, 22, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH5_FREQ_OFFSET = new FpgaRegisters(-1, 23, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH6_FREQ_OFFSET = new FpgaRegisters(-1, 24, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_CH7_FREQ_OFFSET = new FpgaRegisters(-1, 25, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_SCAN_FREQ_OFFSET = new FpgaRegisters(-1, 26, 0, false, 8, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH0 = new FpgaRegisters(-1, 28, 0, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH1 = new FpgaRegisters(-1, 28, 1, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH2 = new FpgaRegisters(-1, 28, 2, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH3 = new FpgaRegisters(-1, 28, 3, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH4 = new FpgaRegisters(-1, 28, 4, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH5 = new FpgaRegisters(-1, 28, 5, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH6 = new FpgaRegisters(-1, 28, 6, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_LBT_SCAN_TIME_CH7 = new FpgaRegisters(-1, 28, 7, false, 1, false, 0, 0x1);
+      public static FpgaRegisters FPGA_RSSI_TARGET = new FpgaRegisters(-1, 30, 0, false, 8, false, 160, 0x1);
+      public static FpgaRegisters FPGA_HISTO_SCAN_FREQ = new FpgaRegisters(-1, 31, 0, false, 24, false, 0, 0x1);
+      public static FpgaRegisters FPGA_NOTCH_FREQ_OFFSET = new FpgaRegisters(-1, 34, 0, false, 6, false, 0, 0x1);
       #endregion
     }
 
@@ -438,15 +438,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-    private Int32 RegisterRead(FpgaRegisters register) => this.RegisterRead((LGWRegisters)register, register.mux);
-
-    private void RegisterWrite(LGWRegisters register, Int32 value) {
+    private void RegisterWrite(LGWRegisters register, Int32 value, Byte mux = 0) {
       if(register.Equals(Registers.PAGE_REG)) {
         this.PageSwitch((Byte)value);
         return;
       } else if(register.Equals(Registers.SOFT_RESET)) {
         if((value & 0x01) != 0) {
-          this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.SOFT_RESET.Address & 0x7F)), 0x80);
+          this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.SOFT_RESET.Address & 0x7F)), 0x80, mux);
         }
         return;
       }
@@ -458,13 +456,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
       Byte[] buf = new Byte[4];
       if(register.SizeInBits == 8 && register.BitOffset == 0) {
-        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), (Byte)value);
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), (Byte)value, mux);
       } else if(register.BitOffset + register.SizeInBits <= 8) { // single-byte read-modify-write, offs:[0-7], leng:[1-7]
-        buf[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)));
+        buf[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)), mux);
         buf[1] = (Byte)(((1 << register.SizeInBits) - 1) << register.BitOffset); // bit mask
         buf[2] = (Byte)(((Byte)value) << register.BitOffset); // new data offsetted
         buf[3] = (Byte)((~buf[1] & buf[0]) | (buf[1] & buf[2])); // mixing old & new data
-        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), buf[3]);
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), buf[3], mux);
       } else if(register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) { // multi-byte direct write routine
         Byte size = (Byte)((register.SizeInBits + 7) / 8); // add a byte if it's not an exact multiple of 8
         Byte[] mbuf = new Byte[size];
@@ -472,11 +470,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           mbuf[i] = (Byte)(0x000000FF & value);
           value >>= 8;
         }
-        this.SPIwriteRegisterBurst((Byte)(0x80 | (register.Address & 0x7F)), mbuf); // write the register in one burst
+        this.SPIwriteRegisterBurstRaw((Byte)(0x80 | (register.Address & 0x7F)), mbuf, mux); // write the register in one burst
       } else {
         throw new ArgumentException("Register spanning multiple memory bytes but with an offset!", register.GetType().ToString());
       }
     }
+
+    private Int32 RegisterFpgaRead(FpgaRegisters register) => this.RegisterRead(register, register.mux);
+
+    private void RegisterFpgaWrite(FpgaRegisters register, Int32 value) => this.RegisterWrite(register, value, register.mux);
 
     private Byte[] RegisterReadArray(LGWRegisters register, UInt16 size) {
       if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) { /* select proper register page if needed */
@@ -638,6 +640,73 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.RegisterWrite(reg_cs, 0);
     }
 
-    
+    private void RegisterSx127xSetup(UInt32 frequency, Byte modulation, Sx127xRxbwE rxbw_khz, SByte rssi_offset) {
+      /*int x, i;
+      uint8_t version;
+      enum lgw_radio_type_e radio_type = LGW_RADIO_TYPE_NONE;
+      struct lgw_radio_type_version_s supported_radio_type[2] = {
+          {LGW_RADIO_TYPE_SX1272, 0x22},
+          {LGW_RADIO_TYPE_SX1276, 0x12}
+      };
+
+      // Check parameters 
+      if (modulation != MOD_FSK) {
+          DEBUG_PRINTF("ERROR: modulation not supported for SX127x (%u)\n", modulation);
+          return LGW_REG_ERROR;
+      }
+      if (rxbw_khz > LGW_SX127X_RXBW_250K_HZ) {
+          DEBUG_PRINTF("ERROR: RX bandwidth not supported for SX127x (%u)\n", rxbw_khz);
+          return LGW_REG_ERROR;
+      }
+
+      // Probing radio type 
+      for (i = 0; i<(int)(sizeof supported_radio_type); i++) {
+          // Reset the radio 
+          x = reset_sx127x(supported_radio_type[i].type);
+          if (x != LGW_SPI_SUCCESS) {
+              DEBUG_MSG("ERROR: Failed to reset sx127x\n");
+              return x;
+          }
+          // Read version register 
+          x = lgw_sx127x_reg_r(0x42, &version);
+          if (x != LGW_SPI_SUCCESS) {
+              DEBUG_MSG("ERROR: Failed to read sx127x version register\n");
+              return x;
+          }
+          // Check if we got the expected version 
+          if (version != supported_radio_type[i].reg_version) {
+              DEBUG_PRINTF("INFO: sx127x version register - read:0x%02x, expected:0x%02x\n", version, supported_radio_type[i].reg_version);
+              continue;
+          } else {
+              DEBUG_PRINTF("INFO: sx127x radio has been found (type:%d, version:0x%02x)\n", supported_radio_type[i].type, version);
+  radio_type = supported_radio_type[i].type;
+              break;
+          }
+      }
+      if (radio_type == LGW_RADIO_TYPE_NONE) {
+          DEBUG_MSG("ERROR: sx127x radio has not been found\n");
+          return LGW_REG_ERROR;
+      }
+
+      // Setup the radio 
+      switch (modulation) {
+          case MOD_FSK:
+              if (radio_type == LGW_RADIO_TYPE_SX1272) {
+                  x = setup_sx1272_FSK(frequency, rxbw_khz, rssi_offset);
+              } else {
+                  x = setup_sx1276_FSK(frequency, rxbw_khz, rssi_offset);
+              }
+              break;
+          default:
+              // Should not happen 
+              break;
+      }
+      if (x != LGW_REG_SUCCESS) {
+          DEBUG_MSG("ERROR: failed to setup SX127x\n");
+          return x;
+      }
+
+      return LGW_REG_SUCCESS;*/
+    }
   }
 }
