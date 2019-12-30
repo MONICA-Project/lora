@@ -86,6 +86,23 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       LGW_SX127X_RXBW_250K_HZ
     };
 
+    enum RadioTypeSx127x
+    {
+      LGW_RADIO_TYPE_NONE,
+      LGW_RADIO_TYPE_SX1272,
+      LGW_RADIO_TYPE_SX1276
+    }
+
+    struct RadioTypeVersion
+    {
+      public RadioTypeSx127x type { get; set; }
+      public Byte version { get; set; }
+      public RadioTypeVersion(RadioTypeSx127x t, Byte r) {
+        this.type = t;
+        this.version = r;
+      }
+    }
+
     public struct LbtChan {
       public UInt32 freq_hz;
       public UInt16 scan_time_us;
