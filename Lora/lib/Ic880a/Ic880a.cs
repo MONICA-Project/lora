@@ -379,16 +379,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     }
 
     private void LbtSetup() {
-      Int32 x, i, val;
-      UInt32 freq_offset;
-
       // Check if LBT feature is supported by FPGA
-      if(((((Byte)this.RegisterFpgaRead(Registers.FPGA_FEATURE)) >> (2)) & ((1 << (1)) - 1)) != 1) {
+      if(this.BitCheck((Byte)this.RegisterFpgaRead(Registers.FPGA_FEATURE), 2, 1) != 1) {
         throw new Exception("ERROR: No support for LBT in FPGA");
       }
 
       // Get FPGA lowest frequency for LBT channels
-      val = this.RegisterFpgaRead(Registers.FPGA_LBT_INITIAL_FREQ);
+      Int32 val = this.RegisterFpgaRead(Registers.FPGA_LBT_INITIAL_FREQ);
       this._lbt_start_freq = val switch
       {
         0 => 915000000,
@@ -404,12 +401,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       val = -2 * this._lbt_rssi_target_dBm; // Convert RSSI target in dBm to FPGA register format 
       this.RegisterFpgaWrite(Registers.FPGA_RSSI_TARGET, val);
       // Set default values for non-active LBT channels 
-      for(i = this._lbt_nb_active_channel; i < 8; i++) {
+      for(Int32 i = this._lbt_nb_active_channel; i < 8; i++) {
         this._lbt_channel_cfg[i].freq_hz = this._lbt_start_freq;
         this._lbt_channel_cfg[i].scan_time_us = 128; // fastest scan for non-active channels 
       }
       // Configure FPGA for both active and non-active LBT channels 
-      for(i = 0; i < 8; i++) {
+      for(Int32 i = 0; i < 8; i++) {
         // Check input parameters 
         if(this._lbt_channel_cfg[i].freq_hz < this._lbt_start_freq) {
           throw new ArgumentException("ERROR: LBT channel frequency is out of range ("+ this._lbt_channel_cfg[i].freq_hz + ")");
@@ -418,7 +415,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           throw new ArgumentException("ERROR: LBT channel scan time is not supported ("+ this._lbt_channel_cfg[i].scan_time_us + ")");
         }
         // Configure 
-        freq_offset = (UInt32)((this._lbt_channel_cfg[i].freq_hz - this._lbt_start_freq) / 100E3); // 100kHz unit 
+        UInt32 freq_offset = (UInt32)((this._lbt_channel_cfg[i].freq_hz - this._lbt_start_freq) / 100E3); // 100kHz unit 
         this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_CH" + i + "_FREQ_OFFSET"), (Int32)freq_offset);
         if(this._lbt_channel_cfg[i].scan_time_us == 5000) { // configured to 128 by default 
           this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_SCAN_TIME_CH" + i), 1);
@@ -430,7 +427,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       Console.WriteLine("\tlbt_nb_active_channel: " + this._lbt_nb_active_channel);
       Console.WriteLine("\tlbt_start_freq: " + this._lbt_start_freq);
       Console.WriteLine("\tlbt_rssi_target: " + this._lbt_rssi_target_dBm);
-      for(i = 0; i < 8; i++) {
+      for(Int32 i = 0; i < 8; i++) {
         Console.WriteLine("\tlbt_channel_cfg[" + i + "].freq_hz: " + this._lbt_channel_cfg[i].freq_hz);
         Console.WriteLine("\tlbt_channel_cfg[" + i + "].scan_time_us: "+ this._lbt_channel_cfg[i].scan_time_us);
       }
