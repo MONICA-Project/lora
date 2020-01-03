@@ -11,6 +11,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     private readonly Boolean[] _radioEnabled = new Boolean[2];
     private readonly UInt32[] _radioFrequency = new UInt32[2];
+    private readonly RadioType[] _rf_radio_type = new RadioType[] { RadioType.SX1257, RadioType.SX1257 };
 
     private readonly Boolean[] _radioEnableTx = new Boolean[2];
     private readonly Boolean[] _interfaceEnabled = new Boolean[10];
@@ -24,13 +25,39 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private readonly Byte _fskSyncWordSize = 3;
     private readonly UInt64 _fskSyncWord = 0xC194C1;
     private Boolean _CrcEnabled = true;
-    private readonly Lutstruct[] _lut = new Lutstruct[2] { new Lutstruct(0, 2, 3, 10, 14), new Lutstruct(0, 3, 3, 14, 27) };
+    private Boolean _lorawan_public = false;
+    
 
-    #region Sending Correction
+    #region Sending Parameters
     private readonly SByte[] _cal_offset_a_i = new SByte[8];
     private readonly SByte[] _cal_offset_a_q = new SByte[8];
     private readonly SByte[] _cal_offset_b_i = new SByte[8];
     private readonly SByte[] _cal_offset_b_q = new SByte[8];
+    private readonly Lutstruct[] _lut = new Lutstruct[2] { new Lutstruct(0, 2, 3, 10, 14), new Lutstruct(0, 3, 3, 14, 27) };
+    private readonly Lgw_sx127x_FSK_bandwidth_s[] sx127x_FskBandwidths = {
+      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7),
+      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7 ),   /* LGW_SX127X_RXBW_2K6_HZ */
+      new Lgw_sx127x_FSK_bandwidth_s(3100  , 1, 7 ),   /* LGW_SX127X_RXBW_3K1_HZ */
+      new Lgw_sx127x_FSK_bandwidth_s(3900  , 0, 7 ),   /* ... */
+      new Lgw_sx127x_FSK_bandwidth_s(5200  , 2, 6 ),
+      new Lgw_sx127x_FSK_bandwidth_s(6300  , 1, 6 ),
+      new Lgw_sx127x_FSK_bandwidth_s(7800  , 0, 6 ),
+      new Lgw_sx127x_FSK_bandwidth_s(10400 , 2, 5 ),
+      new Lgw_sx127x_FSK_bandwidth_s(12500 , 1, 5 ),
+      new Lgw_sx127x_FSK_bandwidth_s(15600 , 0, 5 ),
+      new Lgw_sx127x_FSK_bandwidth_s(20800 , 2, 4 ),
+      new Lgw_sx127x_FSK_bandwidth_s(25000 , 1, 4 ),   /* ... */
+      new Lgw_sx127x_FSK_bandwidth_s(31300 , 0, 4 ),
+      new Lgw_sx127x_FSK_bandwidth_s(41700 , 2, 3 ),
+      new Lgw_sx127x_FSK_bandwidth_s(50000 , 1, 3 ),
+      new Lgw_sx127x_FSK_bandwidth_s(62500 , 0, 3 ),
+      new Lgw_sx127x_FSK_bandwidth_s(83333 , 2, 2 ),
+      new Lgw_sx127x_FSK_bandwidth_s(100000, 1, 2 ),
+      new Lgw_sx127x_FSK_bandwidth_s(125000, 0, 2 ),
+      new Lgw_sx127x_FSK_bandwidth_s(166700, 2, 1 ),
+      new Lgw_sx127x_FSK_bandwidth_s(200000, 1, 1 ),   /* ... */
+      new Lgw_sx127x_FSK_bandwidth_s(250000, 0, 1 )    /* LGW_SX127X_RXBW_250K_HZ */
+    };
     #endregion
 
     private Boolean _lbt_enabled = false;
@@ -39,10 +66,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private SByte _lbt_rssi_target_dBm = 0;
     private Byte _lbt_nb_active_channel = 0;
     private readonly LbtChan[] _lbt_channel_cfg = new LbtChan[8];
+    private Boolean _tx_notch_support = false;
+    private Byte _tx_notch_offset;
 
     private Thread _recieverThread;
     private Boolean _recieverThreadRunning = false;
     private Boolean _isrecieving = false;
+    private Boolean _istransmitting = false;
+    private readonly Object HandleControllerIOLock = new Object();
     private Boolean _deviceStarted = false;
 
     private Byte _selectedPage;

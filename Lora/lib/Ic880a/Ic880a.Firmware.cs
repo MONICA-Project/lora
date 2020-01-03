@@ -1630,13 +1630,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // lgw_reg_w(LGW_SYNCH_DETECT_TH,1); // default 1 
       // lgw_reg_w(LGW_ZERO_PAD,0); // default 0 
       this.RegisterWrite(Registers.SNR_AVG_CST, 3); // default 2 
-      //if (this.lorawan_public) { // LoRa network 
-      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 3); // default 1 
-      //  this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 4); // default 2 
-      //} else { // private network 
-      this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 1); // default 1 
-      this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 2); // default 2 
-      //}
+      if (this._lorawan_public) { // LoRa network 
+        this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+        this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      } else { // private network 
+        this.RegisterWrite(Registers.FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+        this.RegisterWrite(Registers.FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      }
 
       // lgw_reg_w(LGW_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
       // lgw_reg_w(LGW_ONLY_CRC_EN,1); // default 1 
@@ -1652,13 +1652,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // lgw_reg_w(LGW_MBWSSF_FRAME_SYNCH_GAIN,1); // default 1 
       // lgw_reg_w(LGW_MBWSSF_SYNCH_DETECT_TH,1); // default 1 
       // lgw_reg_w(LGW_MBWSSF_ZERO_PAD,0); // default 0 
-      //if (this.lorawan_public) { // LoRa network 
-      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
-      //  this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
-      //} else {
-      this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
-      this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
-      //}
+      if (this._lorawan_public) { // LoRa network 
+        this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+        this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      } else {
+        this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
+        this.RegisterWrite(Registers.MBWSSF_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
+      }
       // lgw_reg_w(LGW_MBWSSF_ONLY_CRC_EN,1); // default 1 
       // lgw_reg_w(LGW_MBWSSF_PAYLOAD_FINE_TIMING_GAIN,2); // default 2 
       // lgw_reg_w(LGW_MBWSSF_PREAMBLE_FINE_TIMING_GAIN,1); // default 1 
@@ -1694,13 +1694,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // TX LoRa 
       // lgw_reg_w(LGW_TX_MODE,0); // default 0 
       this.RegisterWrite(Registers.TX_SWAP_IQ, 1); // "normal" polarity; default 0 
-      //if (this.lorawan_public) { // LoRa network 
-      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
-      //  this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
-      //} else { // Private network 
+      if (this._lorawan_public) { // LoRa network 
+        this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 3); // default 1 
+        this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 4); // default 2 
+      } else { // Private network 
       this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK1_POS, 1); // default 1 
       this.RegisterWrite(Registers.TX_FRAME_SYNCH_PEAK2_POS, 2); // default 2 
-      //}
+      }
 
       // TX FSK 
       // lgw_reg_w(LGW_FSK_TX_GAUSSIAN_EN,1); // default 1 

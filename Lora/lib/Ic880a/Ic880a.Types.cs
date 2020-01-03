@@ -99,31 +99,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     };
 
-    readonly Lgw_sx127x_FSK_bandwidth_s[] sx127x_FskBandwidths = {
-      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7),
-      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7 ),   /* LGW_SX127X_RXBW_2K6_HZ */
-      new Lgw_sx127x_FSK_bandwidth_s(3100  , 1, 7 ),   /* LGW_SX127X_RXBW_3K1_HZ */
-      new Lgw_sx127x_FSK_bandwidth_s(3900  , 0, 7 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(5200  , 2, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(6300  , 1, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(7800  , 0, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(10400 , 2, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(12500 , 1, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(15600 , 0, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(20800 , 2, 4 ),
-      new Lgw_sx127x_FSK_bandwidth_s(25000 , 1, 4 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(31300 , 0, 4 ),
-      new Lgw_sx127x_FSK_bandwidth_s(41700 , 2, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(50000 , 1, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(62500 , 0, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(83333 , 2, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(100000, 1, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(125000, 0, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(166700, 2, 1 ),
-      new Lgw_sx127x_FSK_bandwidth_s(200000, 1, 1 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(250000, 0, 1 )    /* LGW_SX127X_RXBW_250K_HZ */
-    };
-
     enum RadioTypeSx127x
     {
       LGW_RADIO_TYPE_NONE,
@@ -230,6 +205,32 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         this.mix_gain = mix_gain;
         this.rf_power = rf_power;
       }
+    }
+
+    private struct Lgw_pkt_tx_s {
+      public UInt32 freq_hz;        // center frequency of TX 
+      public SendingMode tx_mode;        // select on what event/time the TX is triggered 
+      public  UInt32 count_us;       // timestamp or delay in microseconds for TX trigger 
+      public  Byte rf_chain;       // through which RF chain will the packet be sent 
+      public  SByte rf_power;       // TX power, in dBm 
+      public Modulation modulation;     // modulation to use for the packet 
+      public BW bandwidth;      // modulation bandwidth (LoRa only) 
+      public SF datarate_lora;       // TX datarate (SF for LoRa) 
+      public UInt32 datarate_fsk; // TX datarate (baudrate for FSK) 
+      public CR coderate;       // error-correcting code of the packet (LoRa only) 
+      public  Boolean invert_pol;     //> invert signal polarity, for orthogonal downlinks (LoRa only) 
+      public  Byte f_dev;          // frequency deviation, in kHz (FSK only) 
+      public  UInt16 preamble;       // set the preamble length, 0 for default 
+      public  Boolean no_crc;         // if true, do not send a CRC in the packet 
+      public  Boolean no_header;      // if true, enable implicit header mode (LoRa), fixed length (FSK) 
+      public  UInt16 size;           // payload size in bytes 
+      public  Byte[] payload;    // buffer containing the payload MAX 256
+    };
+
+    private enum SendingMode {
+      IMMEDIATE,
+      TIMESTAMPED,
+      ON_GPS
     }
   }
 }
