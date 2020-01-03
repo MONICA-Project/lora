@@ -223,7 +223,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       public  UInt16 preamble;       // set the preamble length, 0 for default 
       public  Boolean no_crc;         // if true, do not send a CRC in the packet 
       public  Boolean no_header;      // if true, enable implicit header mode (LoRa), fixed length (FSK) 
-      public  UInt16 size;           // payload size in bytes 
       public  Byte[] payload;    // buffer containing the payload MAX 256
     };
 

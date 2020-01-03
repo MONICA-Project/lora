@@ -676,16 +676,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     #region Transmit
     private void Transmit(Lgw_pkt_tx_s pkt_data) {
       /*int i, x;
-      uint8_t buff[256 + TX_METADATA_NB]; // buffer to prepare the packet to send + metadata before SPI write burst 
-      uint32_t part_int = 0; // integer part for PLL register value calculation 
-      uint32_t part_frac = 0; // fractional part for PLL register value calculation 
-      uint16_t fsk_dr_div; // divider to configure for target datarate 
-      int transfer_size = 0; // data to transfer from host to TX databuffer 
-      int payload_offset = 0; // start of the payload content in the databuffer 
-      uint8_t pow_index = 0; // 4-bit value to set the firmware TX power 
-      uint8_t target_mix_gain = 0; // used to select the proper I/Q offset correction 
-      uint32_t count_trig = 0; // timestamp value in trigger mode corrected for TX start delay 
-      bool tx_allowed = false;
+      
+      
+      
+      
+      
+      
       */
 
       // check input range (segfault prevention) 
@@ -737,131 +733,109 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       UInt16 tx_start_delay = this.GetTxStartDelay(tx_notch_enable, pkt_data.bandwidth);
 
       // interpretation of TX power 
-      /*for(pow_index = txgain_lut.size - 1; pow_index > 0; pow_index--) {
-        if(txgain_lut.lut[pow_index].rf_power <= pkt_data.rf_power) {
+      Int32 pow_index; // 4-bit value to set the firmware TX power 
+      for(pow_index = this._lut.Length - 1; pow_index > 0; pow_index--) {
+        if(this._lut[pow_index].rf_power <= pkt_data.rf_power) {
           break;
         }
       }
 
       // loading TX imbalance correction 
-      target_mix_gain = txgain_lut.lut[pow_index].mix_gain;
+      Byte target_mix_gain = this._lut[pow_index].mix_gain; // used to select the proper I/Q offset correction 
       if(pkt_data.rf_chain == 0) { // use radio A calibration table 
-        lgw_reg_w(LGW_TX_OFFSET_I, cal_offset_a_i[target_mix_gain - 8]);
-        lgw_reg_w(LGW_TX_OFFSET_Q, cal_offset_a_q[target_mix_gain - 8]);
+        this.RegisterWrite(Registers.TX_OFFSET_I, this._cal_offset_a_i[target_mix_gain - 8]);
+        this.RegisterWrite(Registers.TX_OFFSET_Q, this._cal_offset_a_q[target_mix_gain - 8]);
       } else { // use radio B calibration table 
-        lgw_reg_w(LGW_TX_OFFSET_I, cal_offset_b_i[target_mix_gain - 8]);
-        lgw_reg_w(LGW_TX_OFFSET_Q, cal_offset_b_q[target_mix_gain - 8]);
+        this.RegisterWrite(Registers.TX_OFFSET_I, this._cal_offset_b_i[target_mix_gain - 8]);
+        this.RegisterWrite(Registers.TX_OFFSET_Q, this._cal_offset_b_q[target_mix_gain - 8]);
       }
 
       // Set digital gain from LUT 
-      lgw_reg_w(LGW_TX_GAIN, txgain_lut.lut[pow_index].dig_gain);
+      this.RegisterWrite(Registers.TX_GAIN, this._lut[pow_index].dig_gain);
 
       // fixed metadata, useful payload and misc metadata compositing 
-      transfer_size = TX_METADATA_NB + pkt_data.size; 
-      payload_offset = TX_METADATA_NB; // start the payload just after the metadata 
+      Int32 transfer_size = 16 + pkt_data.payload.Length;  // data to transfer from host to TX databuffer 
+      Int32 payload_offset = 16; // start the payload just after the metadata // start of the payload content in the databuffer 
 
       // metadata 0 to 2, TX PLL frequency 
-      switch(rf_radio_type[0]) { // we assume that there is only one radio type on the board 
-        case LGW_RADIO_TYPE_SX1255:
-          part_int = pkt_data.freq_hz / (SX125x_32MHz_FRAC << 7); // integer part, gives the MSB 
-          part_frac = ((pkt_data.freq_hz % (SX125x_32MHz_FRAC << 7)) << 9) / SX125x_32MHz_FRAC; // fractional part, gives middle part and LSB 
+      UInt32 part_int; // integer part for PLL register value calculation 
+      UInt32 part_frac; // fractional part for PLL register value calculation 
+      switch(this._rf_radio_type[0]) { // we assume that there is only one radio type on the board 
+        case RadioType.SX1255:
+          part_int = pkt_data.freq_hz / (15625 << 7); // integer part, gives the MSB 
+          part_frac = ((pkt_data.freq_hz % (15625 << 7)) << 9) / 15625; // fractional part, gives middle part and LSB 
           break;
-        case LGW_RADIO_TYPE_SX1257:
-          part_int = pkt_data.freq_hz / (SX125x_32MHz_FRAC << 8); // integer part, gives the MSB 
-          part_frac = ((pkt_data.freq_hz % (SX125x_32MHz_FRAC << 8)) << 8) / SX125x_32MHz_FRAC; // fractional part, gives middle part and LSB 
+        case RadioType.SX1257:
+          part_int = pkt_data.freq_hz / (15625 << 8); // integer part, gives the MSB 
+          part_frac = ((pkt_data.freq_hz % (15625 << 8)) << 8) / 15625; // fractional part, gives middle part and LSB 
           break;
         default:
-          DEBUG_PRINTF("ERROR: UNEXPECTED VALUE %d FOR RADIO TYPE\n", rf_radio_type[0]);
-          break;
+          throw new Exception("ERROR: UNEXPECTED VALUE "+ this._rf_radio_type[0] + " FOR RADIO TYPE");
       }
 
-      buff[0] = 0xFF & part_int; // Most Significant Byte 
-      buff[1] = 0xFF & (part_frac >> 8); // middle byte 
-      buff[2] = 0xFF & part_frac; // Least Significant Byte 
+      Byte[] buff = new Byte[pkt_data.payload.Length + (pkt_data.modulation == Modulation.Lora ? 16: 17)]; // buffer to prepare the packet to send + metadata before SPI write burst 
+      buff[0] = (Byte)(0xFF & part_int); // Most Significant Byte 
+      buff[1] = (Byte)(0xFF & (part_frac >> 8)); // middle byte 
+      buff[2] = (Byte)(0xFF & part_frac); // Least Significant Byte 
 
       // metadata 3 to 6, timestamp trigger value 
       // TX state machine must be triggered at (T0 - lgw_i_tx_start_delay_us) for packet to start being emitted at T0 
-      if(pkt_data.tx_mode == TIMESTAMPED) {
-        count_trig = pkt_data.count_us - (uint32_t)tx_start_delay;
-        buff[3] = 0xFF & (count_trig >> 24);
-        buff[4] = 0xFF & (count_trig >> 16);
-        buff[5] = 0xFF & (count_trig >> 8);
-        buff[6] = 0xFF & count_trig;
+      UInt32 count_trig; // timestamp value in trigger mode corrected for TX start delay 
+      if(pkt_data.tx_mode == SendingMode.TIMESTAMPED) {
+        count_trig = pkt_data.count_us - tx_start_delay;
+        buff[3] = (Byte)(0xFF & (count_trig >> 24));
+        buff[4] = (Byte)(0xFF & (count_trig >> 16));
+        buff[5] = (Byte)(0xFF & (count_trig >> 8));
+        buff[6] = (Byte)(0xFF & count_trig);
       }
 
       // parameters depending on modulation  
-      if(pkt_data.modulation == MOD_LORA) {
+      if(pkt_data.modulation == Modulation.Lora) {
         // metadata 7, modulation type, radio chain selection and TX power 
-        buff[7] = (0x20 & (pkt_data.rf_chain << 5)) | (0x0F & pow_index); // bit 4 is 0 -> LoRa modulation 
+        buff[7] = (Byte)((0x20 & (pkt_data.rf_chain << 5)) | (0x0F & pow_index)); // bit 4 is 0 -> LoRa modulation 
 
         buff[8] = 0; // metadata 8, not used 
 
         // metadata 9, CRC, LoRa CR & SF 
-        switch(pkt_data.datarate) {
-          case DR_LORA_SF7:
-            buff[9] = 7;
-            break;
-          case DR_LORA_SF8:
-            buff[9] = 8;
-            break;
-          case DR_LORA_SF9:
-            buff[9] = 9;
-            break;
-          case DR_LORA_SF10:
-            buff[9] = 10;
-            break;
-          case DR_LORA_SF11:
-            buff[9] = 11;
-            break;
-          case DR_LORA_SF12:
-            buff[9] = 12;
-            break;
-          default:
-            DEBUG_PRINTF("ERROR: UNEXPECTED VALUE %d IN SWITCH STATEMENT\n", pkt_data.datarate);
-        }
-        switch(pkt_data.coderate) {
-          case CR_LORA_4_5:
-            buff[9] |= 1 << 4;
-            break;
-          case CR_LORA_4_6:
-            buff[9] |= 2 << 4;
-            break;
-          case CR_LORA_4_7:
-            buff[9] |= 3 << 4;
-            break;
-          case CR_LORA_4_8:
-            buff[9] |= 4 << 4;
-            break;
-          default:
-            DEBUG_PRINTF("ERROR: UNEXPECTED VALUE %d IN SWITCH STATEMENT\n", pkt_data.coderate);
-        }
+        buff[9] = pkt_data.datarate_lora switch
+        {
+          SF.DR_LORA_SF7 => 7,
+          SF.DR_LORA_SF8 => 8,
+          SF.DR_LORA_SF9 => 9,
+          SF.DR_LORA_SF10 => 10,
+          SF.DR_LORA_SF11 => 11,
+          SF.DR_LORA_SF12 => 12,
+          _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.datarate_lora + " IN SWITCH STATEMENT"),
+        };
+        buff[9] |= pkt_data.coderate switch
+        {
+          CR.CR_LORA_4_5 => 1 << 4,
+          CR.CR_LORA_4_6 => 2 << 4,
+          CR.CR_LORA_4_7 => 3 << 4,
+          CR.CR_LORA_4_8 => 4 << 4,
+          _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.coderate + " IN SWITCH STATEMENT"),
+        };
         if(pkt_data.no_crc == false) {
           buff[9] |= 0x80; // set 'CRC enable' bit 
         } else {
-          DEBUG_MSG("Info: packet will be sent without CRC\n");
+          Console.WriteLine("Info: packet will be sent without CRC");
         }
 
         // metadata 10, payload size 
-        buff[10] = pkt_data.size;
+        buff[10] = (Byte)pkt_data.payload.Length;
 
         // metadata 11, implicit header, modulation bandwidth, PPM offset & polarity 
-        switch(pkt_data.bandwidth) {
-          case BW_125KHZ:
-            buff[11] = 0;
-            break;
-          case BW_250KHZ:
-            buff[11] = 1;
-            break;
-          case BW_500KHZ:
-            buff[11] = 2;
-            break;
-          default:
-            DEBUG_PRINTF("ERROR: UNEXPECTED VALUE %d IN SWITCH STATEMENT\n", pkt_data.bandwidth);
-        }
+        buff[11] = pkt_data.bandwidth switch
+        {
+          BW.BW_125KHZ => 0,
+          BW.BW_250KHZ => 1,
+          BW.BW_500KHZ => 2,
+          _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.bandwidth + " IN SWITCH STATEMENT"),
+        };
         if(pkt_data.no_header == true) {
           buff[11] |= 0x04; // set 'implicit header' bit 
         }
-        if(SET_PPM_ON(pkt_data.bandwidth, pkt_data.datarate)) {
+        if(pkt_data.bandwidth == BW.BW_125KHZ && (pkt_data.datarate_lora == SF.DR_LORA_SF11 || pkt_data.datarate_lora == SF.DR_LORA_SF12) || pkt_data.bandwidth == BW.BW_250KHZ && pkt_data.datarate_lora == SF.DR_LORA_SF12) { 
           buff[11] |= 0x08; // set 'PPM offset' bit at 1 
         }
         if(pkt_data.invert_pol == true) {
@@ -870,13 +844,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // metadata 12 & 13, LoRa preamble size 
         if(pkt_data.preamble == 0) { // if not explicit, use recommended LoRa preamble size 
-          pkt_data.preamble = STD_LORA_PREAMBLE;
-        } else if(pkt_data.preamble < MIN_LORA_PREAMBLE) { // enforce minimum preamble size 
-          pkt_data.preamble = MIN_LORA_PREAMBLE;
-          DEBUG_MSG("Note: preamble length adjusted to respect minimum LoRa preamble size\n");
+          pkt_data.preamble = 8;
+        } else if(pkt_data.preamble < 6) { // enforce minimum preamble size 
+          pkt_data.preamble = 6;
+          Console.WriteLine("Note: preamble length adjusted to respect minimum LoRa preamble size");
         }
-        buff[12] = 0xFF & (pkt_data.preamble >> 8);
-        buff[13] = 0xFF & pkt_data.preamble;
+        buff[12] = (Byte)(0xFF & (pkt_data.preamble >> 8));
+        buff[13] = (Byte)(0xFF & pkt_data.preamble);
 
         // metadata 14 & 15, not used 
         buff[14] = 0;
@@ -884,18 +858,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // MSB of RF frequency is now used in AGC firmware to implement large/narrow filtering in SX1257/55 
         buff[0] &= 0x3F; // Unset 2 MSBs of frequency code 
-        if(pkt_data.bandwidth == BW_500KHZ) {
+        if(pkt_data.bandwidth == BW.BW_500KHZ) {
           buff[0] |= 0x80; // Set MSB bit to enlarge analog filter for 500kHz BW 
         }
 
         // Set MSB-1 bit to enable digital filter if required 
         if(tx_notch_enable == true) {
-          DEBUG_MSG("INFO: Enabling TX notch filter\n");
+          Console.WriteLine("INFO: Enabling TX notch filter");
           buff[0] |= 0x40;
         }
-      } else if(pkt_data.modulation == MOD_FSK) {
+      } else if(pkt_data.modulation == Modulation.Fsk) {
         // metadata 7, modulation type, radio chain selection and TX power 
-        buff[7] = (0x20 & (pkt_data.rf_chain << 5)) | 0x10 | (0x0F & pow_index); // bit 4 is 1 -> FSK modulation 
+        buff[7] = (Byte)((0x20 & (pkt_data.rf_chain << 5)) | 0x10 | (0x0F & pow_index)); // bit 4 is 1 -> FSK modulation 
 
         buff[8] = 0; // metadata 8, not used 
 
@@ -903,29 +877,29 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         buff[9] = pkt_data.f_dev;
 
         // metadata 10, payload size 
-        buff[10] = pkt_data.size;
+        buff[10] = (Byte)pkt_data.payload.Length;
         // TODO: how to handle 255 bytes packets ?!? 
 
         // metadata 11, packet mode, CRC, encoding 
-        buff[11] = 0x01 | (pkt_data.no_crc ? 0 : 0x02) | (0x02 << 2); // always in variable length packet mode, whitening, and CCITT CRC if CRC is not disabled  
+        buff[11] = (Byte)(0x01 | (pkt_data.no_crc ? 0 : 0x02) | (0x02 << 2)); // always in variable length packet mode, whitening, and CCITT CRC if CRC is not disabled  
 
         // metadata 12 & 13, FSK preamble size 
         if(pkt_data.preamble == 0) { // if not explicit, use LoRa MAC preamble size 
-          pkt_data.preamble = STD_FSK_PREAMBLE;
-        } else if(pkt_data.preamble < MIN_FSK_PREAMBLE) { // enforce minimum preamble size 
-          pkt_data.preamble = MIN_FSK_PREAMBLE;
-          DEBUG_MSG("Note: preamble length adjusted to respect minimum FSK preamble size\n");
+          pkt_data.preamble = 5;
+        } else if(pkt_data.preamble < 3) { // enforce minimum preamble size 
+          pkt_data.preamble = 3;
+          Console.WriteLine("Note: preamble length adjusted to respect minimum FSK preamble size");
         }
-        buff[12] = 0xFF & (pkt_data.preamble >> 8);
-        buff[13] = 0xFF & pkt_data.preamble;
+        buff[12] = (Byte)(0xFF & (pkt_data.preamble >> 8));
+        buff[13] = (Byte)(0xFF & pkt_data.preamble);
 
-        // metadata 14 & 15, FSK baudrate 
-        fsk_dr_div = (uint16_t)((uint32_t)LGW_XTAL_FREQU / pkt_data.datarate); // Ok for datarate between 500bps and 250kbps 
-        buff[14] = 0xFF & (fsk_dr_div >> 8);
-        buff[15] = 0xFF & fsk_dr_div;
+        // metadata 14 & 15, FSK baudrate
+        UInt16 fsk_dr_div = (UInt16)(32000000 / pkt_data.datarate_fsk); // Ok for datarate between 500bps and 250kbps  // divider to configure for target datarate 
+        buff[14] = (Byte)(0xFF & (fsk_dr_div >> 8));
+        buff[15] = (Byte)(0xFF & fsk_dr_div);
 
         // insert payload size in the packet for variable mode 
-        buff[16] = pkt_data.size;
+        buff[16] = (Byte)pkt_data.payload.Length;
         ++transfer_size; // one more byte to transfer to the TX modem 
         ++payload_offset; // start the payload with one more byte of offset 
 
@@ -933,53 +907,194 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         buff[0] &= 0x7F; // Always use narrow band for FSK (force MSB to 0) 
 
       } else {
-        DEBUG_MSG("ERROR: INVALID TX MODULATION..\n");
-        return LGW_HAL_ERROR;
+        throw new Exception("ERROR: INVALID TX MODULATION..");
       }
 
       // Configure TX start delay based on TX notch filter 
-      lgw_reg_w(LGW_TX_START_DELAY, tx_start_delay);
+      this.RegisterWrite(Registers.TX_START_DELAY, tx_start_delay);
 
       // copy payload from user struct to buffer containing metadata 
-      memcpy((void*)(buff + payload_offset), (void*)(pkt_data.payload), pkt_data.size);
+      for(Int32 i = 0; i < pkt_data.payload.Length; i++) {
+        buff[i + payload_offset] = pkt_data.payload[i];
+      }
+      if(buff.Length != transfer_size) {
+        throw new Exception("Payload size not match!");
+      }
 
       // reset TX command flags 
-      lgw_abort_tx();
+      this.RegisterWrite(Registers.TX_TRIG_ALL, 0);
 
       // put metadata + payload in the TX data buffer 
-      lgw_reg_w(LGW_TX_DATA_BUF_ADDR, 0);
-      lgw_reg_wb(LGW_TX_DATA_BUF_DATA, buff, transfer_size);
-      DEBUG_ARRAY(i, transfer_size, buff);
+      this.RegisterWrite(Registers.TX_DATA_BUF_ADDR, 0);
+      this.RegisterWriteArray(Registers.TX_DATA_BUF_DATA, buff);
+      //DEBUG_ARRAY(i, transfer_size, buff);
 
-      x = lbt_is_channel_free(&pkt_data, tx_start_delay, &tx_allowed);
-      if(x != LGW_LBT_SUCCESS) {
-        DEBUG_MSG("ERROR: Failed to check channel availability for TX\n");
-        return LGW_HAL_ERROR;
-      }
+      Boolean tx_allowed = LbtIsChannelFree(pkt_data, tx_start_delay);
       if(tx_allowed == true) {
         switch(pkt_data.tx_mode) {
-          case IMMEDIATE:
-            lgw_reg_w(LGW_TX_TRIG_IMMEDIATE, 1);
+          case SendingMode.IMMEDIATE:
+            this.RegisterWrite(Registers.TX_TRIG_IMMEDIATE, 1);
             break;
 
-          case TIMESTAMPED:
-            lgw_reg_w(LGW_TX_TRIG_DELAYED, 1);
+          case SendingMode.TIMESTAMPED:
+            this.RegisterWrite(Registers.TX_TRIG_DELAYED, 1);
             break;
 
-          case ON_GPS:
-            lgw_reg_w(LGW_TX_TRIG_GPS, 1);
+          case SendingMode.ON_GPS:
+            this.RegisterWrite(Registers.TX_TRIG_GPS, 1);
             break;
 
           default:
-            DEBUG_PRINTF("ERROR: UNEXPECTED VALUE %d IN SWITCH STATEMENT\n", pkt_data.tx_mode);
-            return LGW_HAL_ERROR;
+            throw new Exception("ERROR: UNEXPECTED VALUE "+ pkt_data.tx_mode + " IN SWITCH STATEMENT");
         }
       } else {
-        DEBUG_MSG("ERROR: Cannot send packet, channel is busy (LBT)\n");
-        return LGW_LBT_ISSUE;
+        throw new Exception("ERROR: Cannot send packet, channel is busy (LBT)");
+      }
+    }
+
+    private Boolean LbtIsChannelFree(Lgw_pkt_tx_s pkt_data, UInt16 tx_start_delay) {
+      return true;
+      /*int i;
+      int32_t val;
+      uint32_t tx_start_time = 0;
+      uint32_t tx_end_time = 0;
+      uint32_t delta_time = 0;
+      uint32_t sx1301_time = 0;
+      uint32_t lbt_time = 0;
+      uint32_t lbt_time1 = 0;
+      uint32_t lbt_time2 = 0;
+      uint32_t tx_max_time = 0;
+      int lbt_channel_decod_1 = -1;
+      int lbt_channel_decod_2 = -1;
+      uint32_t packet_duration = 0;
+
+      // Check input parameters 
+      if((pkt_data == NULL) || (tx_allowed == NULL)) {
+        return LGW_LBT_ERROR;
       }
 
-      return LGW_HAL_SUCCESS;*/
+      // Check if TX is allowed 
+      if(lbt_enable == true) {
+        // TX allowed for LoRa only 
+        if(pkt_data->modulation != MOD_LORA) {
+          *tx_allowed = false;
+          DEBUG_PRINTF("INFO: TX is not allowed for this modulation (%x)\n", pkt_data->modulation);
+          return LGW_LBT_SUCCESS;
+        }
+
+        // Get SX1301 time at last PPS 
+        lgw_get_trigcnt(&sx1301_time);
+
+        DEBUG_MSG("################################\n");
+        switch(pkt_data->tx_mode) {
+          case TIMESTAMPED:
+            DEBUG_MSG("tx_mode                    = TIMESTAMPED\n");
+            tx_start_time = pkt_data->count_us & LBT_TIMESTAMP_MASK;
+            break;
+          case ON_GPS:
+            DEBUG_MSG("tx_mode                    = ON_GPS\n");
+            tx_start_time = (sx1301_time + (uint32_t)tx_start_delay + 1000000) & LBT_TIMESTAMP_MASK;
+            break;
+          case IMMEDIATE:
+            DEBUG_MSG("ERROR: tx_mode IMMEDIATE is not supported when LBT is enabled\n");
+          // FALLTHROUGH  
+          default:
+            return LGW_LBT_ERROR;
+        }
+
+        // Select LBT Channel corresponding to required TX frequency 
+        lbt_channel_decod_1 = -1;
+        lbt_channel_decod_2 = -1;
+        if(pkt_data->bandwidth == BW_125KHZ) {
+          for(i = 0; i < lbt_nb_active_channel; i++) {
+            if(is_equal_freq(pkt_data->freq_hz, lbt_channel_cfg[i].freq_hz) == true) {
+              DEBUG_PRINTF("LBT: select channel %d (%u Hz)\n", i, lbt_channel_cfg[i].freq_hz);
+              lbt_channel_decod_1 = i;
+              lbt_channel_decod_2 = i;
+              if(lbt_channel_cfg[i].scan_time_us == 5000) {
+                tx_max_time = 4000000; // 4 seconds 
+              } else { // scan_time_us = 128 
+                tx_max_time = 400000; // 400 milliseconds 
+              }
+              break;
+            }
+          }
+        } else if(pkt_data->bandwidth == BW_250KHZ) {
+          // In case of 250KHz, the TX freq has to be in between 2 consecutive channels of 200KHz BW.
+          //    The TX can only be over 2 channels, not more 
+          for(i = 0; i < (lbt_nb_active_channel - 1); i++) {
+            if((is_equal_freq(pkt_data->freq_hz, (lbt_channel_cfg[i].freq_hz + lbt_channel_cfg[i + 1].freq_hz) / 2) == true) && ((lbt_channel_cfg[i + 1].freq_hz - lbt_channel_cfg[i].freq_hz) == 200E3)) {
+              DEBUG_PRINTF("LBT: select channels %d,%d (%u Hz)\n", i, i + 1, (lbt_channel_cfg[i].freq_hz + lbt_channel_cfg[i + 1].freq_hz) / 2);
+              lbt_channel_decod_1 = i;
+              lbt_channel_decod_2 = i + 1;
+              if(lbt_channel_cfg[i].scan_time_us == 5000) {
+                tx_max_time = 4000000; // 4 seconds 
+              } else { // scan_time_us = 128 
+                tx_max_time = 200000; // 200 milliseconds 
+              }
+              break;
+            }
+          }
+        } else {
+          // Nothing to do for now 
+        }
+
+        // Get last time when selected channel was free 
+        if((lbt_channel_decod_1 >= 0) && (lbt_channel_decod_2 >= 0)) {
+          lgw_fpga_reg_w(LGW_FPGA_LBT_TIMESTAMP_SELECT_CH, (int32_t)lbt_channel_decod_1);
+          lgw_fpga_reg_r(LGW_FPGA_LBT_TIMESTAMP_CH, &val);
+          lbt_time = lbt_time1 = (uint32_t)(val & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
+
+          if(lbt_channel_decod_1 != lbt_channel_decod_2) {
+            lgw_fpga_reg_w(LGW_FPGA_LBT_TIMESTAMP_SELECT_CH, (int32_t)lbt_channel_decod_2);
+            lgw_fpga_reg_r(LGW_FPGA_LBT_TIMESTAMP_CH, &val);
+            lbt_time2 = (uint32_t)(val & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
+
+            if(lbt_time2 < lbt_time1) {
+              lbt_time = lbt_time2;
+            }
+          }
+        } else {
+          lbt_time = 0;
+        }
+
+        packet_duration = lgw_time_on_air(pkt_data) * 1000UL;
+        tx_end_time = (tx_start_time + packet_duration) & LBT_TIMESTAMP_MASK;
+        if(lbt_time < tx_end_time) {
+          delta_time = tx_end_time - lbt_time;
+        } else {
+          // It means LBT counter has wrapped 
+          printf("LBT: lbt counter has wrapped\n");
+          delta_time = (LBT_TIMESTAMP_MASK - lbt_time) + tx_end_time;
+        }
+
+        DEBUG_PRINTF("sx1301_time                = %u\n", sx1301_time & LBT_TIMESTAMP_MASK);
+        DEBUG_PRINTF("tx_freq                    = %u\n", pkt_data->freq_hz);
+        DEBUG_MSG("------------------------------------------------\n");
+        DEBUG_PRINTF("packet_duration            = %u\n", packet_duration);
+        DEBUG_PRINTF("tx_start_time              = %u\n", tx_start_time);
+        DEBUG_PRINTF("lbt_time1                  = %u\n", lbt_time1);
+        DEBUG_PRINTF("lbt_time2                  = %u\n", lbt_time2);
+        DEBUG_PRINTF("lbt_time                   = %u\n", lbt_time);
+        DEBUG_PRINTF("delta_time                 = %u\n", delta_time);
+        DEBUG_MSG("------------------------------------------------\n");
+
+        // send data if allowed 
+        // lbt_time: last time when channel was free 
+        // tx_max_time: maximum time allowed to send packet since last free time 
+        // 2048: some margin 
+        if((delta_time < (tx_max_time - 2048)) && (lbt_time != 0)) {
+          *tx_allowed = true;
+        } else {
+          DEBUG_MSG("ERROR: TX request rejected (LBT)\n");
+          *tx_allowed = false;
+        }
+      } else {
+        // Always allow if LBT is disabled 
+        *tx_allowed = true;
+      }
+
+      return LGW_LBT_SUCCESS;*/
     }
 
     UInt16 GetTxStartDelay(Boolean tx_notch_enable, BW bw) {
