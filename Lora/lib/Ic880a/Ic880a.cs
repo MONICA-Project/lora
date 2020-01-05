@@ -70,7 +70,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     }
 
     public override void Send(Byte[] data, Byte @interface) {
-      Lgw_pkt_tx_s p = this.PrepareSend(data, @interface);
+      SendingPacket p = this.PrepareSend(data, @interface);
       this._istransmitting = true;
       if(this._deviceStarted) {
         lock(this.HandleControllerIOLock) {
@@ -117,7 +117,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         /* Start SX1301 counter and LBT FSM at the same time to be in sync */
         this.RegisterWrite(Registers.CLK32M_EN, 0);
-        this.RegisterFpgaWrite(Registers.FPGA_CTRL_FEATURE_START, 1);
+        this.LbtStart();
       }
 
       this.RegisterWrite(Registers.GLOBAL_EN, 1); // Enable clocks 
@@ -391,61 +391,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this._deviceStarted = true;
     }
 
-    private void LbtSetup() {
-      // Check if LBT feature is supported by FPGA
-      if(this.BitCheck((Byte)this.RegisterFpgaRead(Registers.FPGA_FEATURE), 2, 1) != 1) {
-        throw new Exception("ERROR: No support for LBT in FPGA");
-      }
-
-      // Get FPGA lowest frequency for LBT channels
-      Int32 val = this.RegisterFpgaRead(Registers.FPGA_LBT_INITIAL_FREQ);
-      this._lbt_start_freq = val switch
-      {
-        0 => 915000000,
-        1 => 863000000,
-        _ => throw new Exception("ERROR: LBT start frequency " + val + " is not supported"),
-      };
-
-      // Configure SX127x for FSK 
-      this.RegisterSx127xSetup(this._lbt_start_freq, 0x20, Sx127xRxbwE.LGW_SX127X_RXBW_100K_HZ, this._lbt_rssi_offset_dB); // 200KHz LBT channels 
-
-
-      // Configure FPGA for LBT 
-      val = -2 * this._lbt_rssi_target_dBm; // Convert RSSI target in dBm to FPGA register format 
-      this.RegisterFpgaWrite(Registers.FPGA_RSSI_TARGET, val);
-      // Set default values for non-active LBT channels 
-      for(Int32 i = this._lbt_nb_active_channel; i < 8; i++) {
-        this._lbt_channel_cfg[i].freq_hz = this._lbt_start_freq;
-        this._lbt_channel_cfg[i].scan_time_us = 128; // fastest scan for non-active channels 
-      }
-      // Configure FPGA for both active and non-active LBT channels 
-      for(Int32 i = 0; i < 8; i++) {
-        // Check input parameters 
-        if(this._lbt_channel_cfg[i].freq_hz < this._lbt_start_freq) {
-          throw new ArgumentException("ERROR: LBT channel frequency is out of range ("+ this._lbt_channel_cfg[i].freq_hz + ")");
-        }
-        if(this._lbt_channel_cfg[i].scan_time_us != 128 && this._lbt_channel_cfg[i].scan_time_us != 5000) {
-          throw new ArgumentException("ERROR: LBT channel scan time is not supported ("+ this._lbt_channel_cfg[i].scan_time_us + ")");
-        }
-        // Configure 
-        UInt32 freq_offset = (UInt32)((this._lbt_channel_cfg[i].freq_hz - this._lbt_start_freq) / 100E3); // 100kHz unit 
-        this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_CH" + i + "_FREQ_OFFSET"), (Int32)freq_offset);
-        if(this._lbt_channel_cfg[i].scan_time_us == 5000) { // configured to 128 by default 
-          this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_SCAN_TIME_CH" + i), 1);
-        }
-      }
-
-      Console.WriteLine("Note: LBT configuration:");
-      Console.WriteLine("\tlbt_enable: " + this._lbt_enabled);
-      Console.WriteLine("\tlbt_nb_active_channel: " + this._lbt_nb_active_channel);
-      Console.WriteLine("\tlbt_start_freq: " + this._lbt_start_freq);
-      Console.WriteLine("\tlbt_rssi_target: " + this._lbt_rssi_target_dBm);
-      for(Int32 i = 0; i < 8; i++) {
-        Console.WriteLine("\tlbt_channel_cfg[" + i + "].freq_hz: " + this._lbt_channel_cfg[i].freq_hz);
-        Console.WriteLine("\tlbt_channel_cfg[" + i + "].scan_time_us: "+ this._lbt_channel_cfg[i].scan_time_us);
-      }
-    }
-
     private void Reset() {
       Thread.Sleep(150);
       this.PinReset.Write(GpioPinValue.Low);
@@ -460,6 +405,65 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.SPIwriteRegisterRaw(0, 128);
       this.SPIwriteRegisterRaw(0, 0);
       //this.PinReset.PinMode = GpioPinDriveMode.Input;
+    }
+
+    UInt32 LgwTimeOnAir(SendingPacket packet) {
+      if(packet.modulation == Modulation.Lora) {
+        // Get bandwidth 
+        UInt16 bw = packet.bandwidth switch
+        {
+          BW.BW_7K8HZ => 7800 / 1000,
+          BW.BW_15K6HZ => 15600 / 1000,
+          BW.BW_31K2HZ => 31200 / 1000,
+          BW.BW_62K5HZ => 62500 / 1000,
+          BW.BW_125KHZ => 125000 / 1000,
+          BW.BW_250KHZ => 250000 / 1000,
+          BW.BW_500KHZ => 500000 / 1000,
+          _ => throw new Exception("ERROR: Cannot compute time on air for this packet, unsupported bandwidth (" + packet.bandwidth + ")")
+        };
+        // Get datarate
+        Byte sf = packet.datarate_lora switch
+        {
+          SF.DR_LORA_SF7 => 7,
+          SF.DR_LORA_SF8 => 8,
+          SF.DR_LORA_SF9 => 9,
+          SF.DR_LORA_SF10 => 10,
+          SF.DR_LORA_SF11 => 11,
+          SF.DR_LORA_SF12 => 12,
+          _ => throw new Exception("ERROR: Cannot compute time on air for this packet, unsupported datarate (" + packet.datarate_lora + ")")
+        };
+
+        // Duration of 1 symbol 
+        Double Tsym = Math.Pow(2, sf) / bw;
+
+        // Duration of preamble 
+        Double Tpreamble = (packet.preamble + 4.25) * Tsym;
+
+        // Duration of payload 
+        Byte h = (Byte)((packet.no_header == false) ? 0 : 1); // header is always enabled, except for beacons 
+        Byte de = (Byte)((sf >= 11) ? 1 : 0); // Low datarate optimization enabled for SF11 and SF12 
+
+        UInt32 payloadSymbNb = (UInt32)(8 + Math.Ceiling((8 * packet.payload.Length - 4 * sf + 28 + 16 - 20 * h) / (Double)(4 * (sf - 2 * de))) * ((Byte)packet.coderate + 4)); // Explicitely cast to double to keep precision of the division 
+
+        Double Tpayload = payloadSymbNb * Tsym;
+
+        // Duration of packet 
+        return (UInt32)(Tpreamble + Tpayload);
+      } else if(packet.modulation == Modulation.Fsk) {
+        // PREAMBLE + SYNC_WORD + PKT_LEN + PKT_PAYLOAD + CRC
+        //        PREAMBLE: default 5 bytes
+        //        SYNC_WORD: default 3 bytes
+        //        PKT_LEN: 1 byte (variable length mode)
+        //        PKT_PAYLOAD: x bytes
+        //        CRC: 0 or 2 bytes
+
+        Double Tfsk = 8 * (Double)(packet.preamble + this._fskSyncWordSize + 1 + packet.payload.Length + ((packet.no_crc == true) ? 0 : 2)) / packet.datarate_fsk * 1E3;
+
+        // Duration of packet 
+        return (UInt32)Tfsk + 1; // add margin for rounding 
+      } else {
+        throw new Exception("ERROR: Cannot compute time on air for this packet, unsupported modulation (" + packet.modulation + ")");
+      }
     }
     #endregion
 
@@ -674,16 +678,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     #endregion
 
     #region Transmit
-    private void Transmit(Lgw_pkt_tx_s pkt_data) {
-      /*int i, x;
-      
-      
-      
-      
-      
-      
-      */
-
+    private void Transmit(SendingPacket pkt_data) {
       // check input range (segfault prevention) 
       if(pkt_data.rf_chain >= 2) {
         throw new Exception("ERROR: INVALID RF_CHAIN TO SEND PACKETS");
@@ -929,7 +924,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.RegisterWriteArray(Registers.TX_DATA_BUF_DATA, buff);
       //DEBUG_ARRAY(i, transfer_size, buff);
 
-      Boolean tx_allowed = LbtIsChannelFree(pkt_data, tx_start_delay);
+      Boolean tx_allowed = this.LbtIsChannelFree(pkt_data, tx_start_delay);
       if(tx_allowed == true) {
         switch(pkt_data.tx_mode) {
           case SendingMode.IMMEDIATE:
@@ -952,150 +947,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-    private Boolean LbtIsChannelFree(Lgw_pkt_tx_s pkt_data, UInt16 tx_start_delay) {
-      return true;
-      /*int i;
-      int32_t val;
-      uint32_t tx_start_time = 0;
-      uint32_t tx_end_time = 0;
-      uint32_t delta_time = 0;
-      uint32_t sx1301_time = 0;
-      uint32_t lbt_time = 0;
-      uint32_t lbt_time1 = 0;
-      uint32_t lbt_time2 = 0;
-      uint32_t tx_max_time = 0;
-      int lbt_channel_decod_1 = -1;
-      int lbt_channel_decod_2 = -1;
-      uint32_t packet_duration = 0;
 
-      // Check input parameters 
-      if((pkt_data == NULL) || (tx_allowed == NULL)) {
-        return LGW_LBT_ERROR;
-      }
-
-      // Check if TX is allowed 
-      if(lbt_enable == true) {
-        // TX allowed for LoRa only 
-        if(pkt_data->modulation != MOD_LORA) {
-          *tx_allowed = false;
-          DEBUG_PRINTF("INFO: TX is not allowed for this modulation (%x)\n", pkt_data->modulation);
-          return LGW_LBT_SUCCESS;
-        }
-
-        // Get SX1301 time at last PPS 
-        lgw_get_trigcnt(&sx1301_time);
-
-        DEBUG_MSG("################################\n");
-        switch(pkt_data->tx_mode) {
-          case TIMESTAMPED:
-            DEBUG_MSG("tx_mode                    = TIMESTAMPED\n");
-            tx_start_time = pkt_data->count_us & LBT_TIMESTAMP_MASK;
-            break;
-          case ON_GPS:
-            DEBUG_MSG("tx_mode                    = ON_GPS\n");
-            tx_start_time = (sx1301_time + (uint32_t)tx_start_delay + 1000000) & LBT_TIMESTAMP_MASK;
-            break;
-          case IMMEDIATE:
-            DEBUG_MSG("ERROR: tx_mode IMMEDIATE is not supported when LBT is enabled\n");
-          // FALLTHROUGH  
-          default:
-            return LGW_LBT_ERROR;
-        }
-
-        // Select LBT Channel corresponding to required TX frequency 
-        lbt_channel_decod_1 = -1;
-        lbt_channel_decod_2 = -1;
-        if(pkt_data->bandwidth == BW_125KHZ) {
-          for(i = 0; i < lbt_nb_active_channel; i++) {
-            if(is_equal_freq(pkt_data->freq_hz, lbt_channel_cfg[i].freq_hz) == true) {
-              DEBUG_PRINTF("LBT: select channel %d (%u Hz)\n", i, lbt_channel_cfg[i].freq_hz);
-              lbt_channel_decod_1 = i;
-              lbt_channel_decod_2 = i;
-              if(lbt_channel_cfg[i].scan_time_us == 5000) {
-                tx_max_time = 4000000; // 4 seconds 
-              } else { // scan_time_us = 128 
-                tx_max_time = 400000; // 400 milliseconds 
-              }
-              break;
-            }
-          }
-        } else if(pkt_data->bandwidth == BW_250KHZ) {
-          // In case of 250KHz, the TX freq has to be in between 2 consecutive channels of 200KHz BW.
-          //    The TX can only be over 2 channels, not more 
-          for(i = 0; i < (lbt_nb_active_channel - 1); i++) {
-            if((is_equal_freq(pkt_data->freq_hz, (lbt_channel_cfg[i].freq_hz + lbt_channel_cfg[i + 1].freq_hz) / 2) == true) && ((lbt_channel_cfg[i + 1].freq_hz - lbt_channel_cfg[i].freq_hz) == 200E3)) {
-              DEBUG_PRINTF("LBT: select channels %d,%d (%u Hz)\n", i, i + 1, (lbt_channel_cfg[i].freq_hz + lbt_channel_cfg[i + 1].freq_hz) / 2);
-              lbt_channel_decod_1 = i;
-              lbt_channel_decod_2 = i + 1;
-              if(lbt_channel_cfg[i].scan_time_us == 5000) {
-                tx_max_time = 4000000; // 4 seconds 
-              } else { // scan_time_us = 128 
-                tx_max_time = 200000; // 200 milliseconds 
-              }
-              break;
-            }
-          }
-        } else {
-          // Nothing to do for now 
-        }
-
-        // Get last time when selected channel was free 
-        if((lbt_channel_decod_1 >= 0) && (lbt_channel_decod_2 >= 0)) {
-          lgw_fpga_reg_w(LGW_FPGA_LBT_TIMESTAMP_SELECT_CH, (int32_t)lbt_channel_decod_1);
-          lgw_fpga_reg_r(LGW_FPGA_LBT_TIMESTAMP_CH, &val);
-          lbt_time = lbt_time1 = (uint32_t)(val & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
-
-          if(lbt_channel_decod_1 != lbt_channel_decod_2) {
-            lgw_fpga_reg_w(LGW_FPGA_LBT_TIMESTAMP_SELECT_CH, (int32_t)lbt_channel_decod_2);
-            lgw_fpga_reg_r(LGW_FPGA_LBT_TIMESTAMP_CH, &val);
-            lbt_time2 = (uint32_t)(val & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
-
-            if(lbt_time2 < lbt_time1) {
-              lbt_time = lbt_time2;
-            }
-          }
-        } else {
-          lbt_time = 0;
-        }
-
-        packet_duration = lgw_time_on_air(pkt_data) * 1000UL;
-        tx_end_time = (tx_start_time + packet_duration) & LBT_TIMESTAMP_MASK;
-        if(lbt_time < tx_end_time) {
-          delta_time = tx_end_time - lbt_time;
-        } else {
-          // It means LBT counter has wrapped 
-          printf("LBT: lbt counter has wrapped\n");
-          delta_time = (LBT_TIMESTAMP_MASK - lbt_time) + tx_end_time;
-        }
-
-        DEBUG_PRINTF("sx1301_time                = %u\n", sx1301_time & LBT_TIMESTAMP_MASK);
-        DEBUG_PRINTF("tx_freq                    = %u\n", pkt_data->freq_hz);
-        DEBUG_MSG("------------------------------------------------\n");
-        DEBUG_PRINTF("packet_duration            = %u\n", packet_duration);
-        DEBUG_PRINTF("tx_start_time              = %u\n", tx_start_time);
-        DEBUG_PRINTF("lbt_time1                  = %u\n", lbt_time1);
-        DEBUG_PRINTF("lbt_time2                  = %u\n", lbt_time2);
-        DEBUG_PRINTF("lbt_time                   = %u\n", lbt_time);
-        DEBUG_PRINTF("delta_time                 = %u\n", delta_time);
-        DEBUG_MSG("------------------------------------------------\n");
-
-        // send data if allowed 
-        // lbt_time: last time when channel was free 
-        // tx_max_time: maximum time allowed to send packet since last free time 
-        // 2048: some margin 
-        if((delta_time < (tx_max_time - 2048)) && (lbt_time != 0)) {
-          *tx_allowed = true;
-        } else {
-          DEBUG_MSG("ERROR: TX request rejected (LBT)\n");
-          *tx_allowed = false;
-        }
-      } else {
-        // Always allow if LBT is disabled 
-        *tx_allowed = true;
-      }
-
-      return LGW_LBT_SUCCESS;*/
-    }
+    
 
     UInt16 GetTxStartDelay(Boolean tx_notch_enable, BW bw) {
       Single notch_delay_us = 0.0f;
@@ -1133,12 +986,29 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
 
       /* Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate */
-      tx_notch_delay = (31.25f * ((64 + this._tx_notch_offset) / 2f)) / 1E3f; /* 32MHz => 31.25ns */
+      tx_notch_delay = 31.25f * ((64 + this._tx_notch_offset) / 2f) / 1E3f; /* 32MHz => 31.25ns */
 
       return tx_notch_delay;
     }
 
-    private Lgw_pkt_tx_s PrepareSend(Byte[] data, Byte @interface) => throw new NotImplementedException();
+    private SendingPacket PrepareSend(Byte[] data, Byte @interface) => new SendingPacket {
+      bandwidth = this._loraBandwidth,
+      coderate = CR.CR_LORA_4_7,
+      count_us = 0,
+      datarate_fsk = 0,
+      datarate_lora = this._loraSpreadingFactor,
+      freq_hz = (UInt32)(this._radioFrequency[(Byte)this._interfaceChain[@interface]] + this._interfaceFrequency[@interface]),
+      f_dev = 0,
+      invert_pol = false,
+      modulation = Modulation.Lora,
+      no_crc = false,
+      no_header = false,
+      payload = data,
+      preamble = 0,
+      rf_chain = (Byte)this._interfaceChain[@interface],
+      rf_power = 20,
+      tx_mode = SendingMode.IMMEDIATE
+    };
     #endregion
 
     private void SetupIO() {

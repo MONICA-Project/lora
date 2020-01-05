@@ -207,23 +207,23 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-    private struct Lgw_pkt_tx_s {
+    private struct SendingPacket {
       public UInt32 freq_hz;        // center frequency of TX 
-      public SendingMode tx_mode;        // select on what event/time the TX is triggered 
-      public  UInt32 count_us;       // timestamp or delay in microseconds for TX trigger 
-      public  Byte rf_chain;       // through which RF chain will the packet be sent 
+      public SendingMode tx_mode;   // select on what event/time the TX is triggered 
+      public  UInt32 count_us;      // timestamp or delay in microseconds for TX trigger 
+      public  Byte rf_chain;        // through which RF chain will the packet be sent 
       public  SByte rf_power;       // TX power, in dBm 
-      public Modulation modulation;     // modulation to use for the packet 
-      public BW bandwidth;      // modulation bandwidth (LoRa only) 
-      public SF datarate_lora;       // TX datarate (SF for LoRa) 
-      public UInt32 datarate_fsk; // TX datarate (baudrate for FSK) 
-      public CR coderate;       // error-correcting code of the packet (LoRa only) 
-      public  Boolean invert_pol;     //> invert signal polarity, for orthogonal downlinks (LoRa only) 
-      public  Byte f_dev;          // frequency deviation, in kHz (FSK only) 
-      public  UInt16 preamble;       // set the preamble length, 0 for default 
-      public  Boolean no_crc;         // if true, do not send a CRC in the packet 
-      public  Boolean no_header;      // if true, enable implicit header mode (LoRa), fixed length (FSK) 
-      public  Byte[] payload;    // buffer containing the payload MAX 256
+      public Modulation modulation; // modulation to use for the packet 
+      public BW bandwidth;          // modulation bandwidth (LoRa only) 
+      public SF datarate_lora;      // TX datarate (SF for LoRa) 
+      public UInt32 datarate_fsk;   // TX datarate (baudrate for FSK) 
+      public CR coderate;           // error-correcting code of the packet (LoRa only) 
+      public  Boolean invert_pol;   // invert signal polarity, for orthogonal downlinks (LoRa only) 
+      public  Byte f_dev;           // frequency deviation, in kHz (FSK only) 
+      public  UInt16 preamble;      // set the preamble length, 0 for default 
+      public  Boolean no_crc;       // if true, do not send a CRC in the packet 
+      public  Boolean no_header;    // if true, enable implicit header mode (LoRa), fixed length (FSK) 
+      public  Byte[] payload;       // buffer containing the payload MAX 256
     };
 
     private enum SendingMode {
