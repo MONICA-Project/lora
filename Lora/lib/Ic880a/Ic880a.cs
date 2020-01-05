@@ -957,7 +957,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
       // Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate 
       if(tx_notch_enable) {
-        notch_delay_us = this.FPGAGetTxNotchDelay();
+        notch_delay_us = this.FpgaGetTxNotchDelay();
       }
 
       // Calibrated delay brought by SX1301 depending on signal bandwidth 
@@ -978,18 +978,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       return (UInt16)tx_start_delay; // keep truncating instead of rounding: better behaviour measured 
     }
 
-    Single FPGAGetTxNotchDelay() {
-      Single tx_notch_delay;
-
-      if(this._tx_notch_support == false) {
-        return 0;
-      }
-
-      /* Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate */
-      tx_notch_delay = 31.25f * ((64 + this._tx_notch_offset) / 2f) / 1E3f; /* 32MHz => 31.25ns */
-
-      return tx_notch_delay;
-    }
+    
 
     private SendingPacket PrepareSend(Byte[] data, Byte @interface) => new SendingPacket {
       bandwidth = this._loraBandwidth,

@@ -4,14 +4,37 @@ using BlubbFish.Utils;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
   public partial class Ic880a {
+    private Boolean _lbt_enabled = false;
+    private Byte _lbt_nb_active_channel = 0;
+    private SByte _lbt_rssi_target_dBm = 0;
+    private SByte _lbt_rssi_offset_dB = 0;
+    private UInt32 _lbt_start_freq = 0;
+    private readonly LbtChan[] _lbt_channel_cfg = new LbtChan[8];
+
+    private void LbtParseConfig() {
+      this._lbt_enabled = Boolean.Parse(this.config["lbt_enable"]);
+      if(this._lbt_enabled) {
+        this._lbt_nb_active_channel = Byte.Parse(this.config["lbt_nb_channel"]);
+        if(this._lbt_nb_active_channel < 1 || this._lbt_nb_active_channel > 8) {
+          throw new Exception("ERROR: Number of defined LBT channels is out of range (" + this._lbt_nb_active_channel + ")");
+        }
+        this._lbt_rssi_target_dBm = SByte.Parse(this.config["lbt_rssi_target"]);
+        this._lbt_rssi_offset_dB = SByte.Parse(this.config["lbt_rssi_offset"]);
+        for(Int32 i = 0; i < this._lbt_nb_active_channel; i++) {
+          this._lbt_channel_cfg[i].freq_hz = UInt32.Parse(this.config["lbt_channel" + i + "_freq_hz"]);
+          this._lbt_channel_cfg[i].scan_time_us = UInt16.Parse(this.config["lbt_channel" + i + "_scan_time_us"]);
+        }
+      }
+    }
+
     private void LbtSetup() {
       // Check if LBT feature is supported by FPGA
-      if(this.BitCheck((Byte)this.RegisterFpgaRead(Registers.FPGA_FEATURE), 2, 1) != 1) {
+      if(this.BitCheck((Byte)this.FpgaRegisterRead(Registers.FPGA_FEATURE), 2, 1) != 1) {
         throw new Exception("ERROR: No support for LBT in FPGA");
       }
 
       // Get FPGA lowest frequency for LBT channels
-      Int32 val = this.RegisterFpgaRead(Registers.FPGA_LBT_INITIAL_FREQ);
+      Int32 val = this.FpgaRegisterRead(Registers.FPGA_LBT_INITIAL_FREQ);
       this._lbt_start_freq = val switch
       {
         0 => 915000000,
@@ -25,7 +48,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
       // Configure FPGA for LBT 
       val = -2 * this._lbt_rssi_target_dBm; // Convert RSSI target in dBm to FPGA register format 
-      this.RegisterFpgaWrite(Registers.FPGA_RSSI_TARGET, val);
+      this.FpgaRegisterWrite(Registers.FPGA_RSSI_TARGET, val);
       // Set default values for non-active LBT channels 
       for(Int32 i = this._lbt_nb_active_channel; i < 8; i++) {
         this._lbt_channel_cfg[i].freq_hz = this._lbt_start_freq;
@@ -42,9 +65,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         }
         // Configure 
         UInt32 freq_offset = (UInt32)((this._lbt_channel_cfg[i].freq_hz - this._lbt_start_freq) / 100E3); // 100kHz unit 
-        this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_CH" + i + "_FREQ_OFFSET"), (Int32)freq_offset);
+        this.FpgaRegisterWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_CH" + i + "_FREQ_OFFSET"), (Int32)freq_offset);
         if(this._lbt_channel_cfg[i].scan_time_us == 5000) { // configured to 128 by default 
-          this.RegisterFpgaWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_SCAN_TIME_CH" + i), 1);
+          this.FpgaRegisterWrite((FpgaRegisters)Helper.GetField(typeof(Registers), "FPGA_LBT_SCAN_TIME_CH" + i), 1);
         }
       }
 
@@ -59,7 +82,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-    private void LbtStart() => this.RegisterFpgaWrite(Registers.FPGA_CTRL_FEATURE_START, 1);
+    private void LbtStart() => this.FpgaRegisterWrite(Registers.FPGA_CTRL_FEATURE_START, 1);
 
     private Boolean LbtIsChannelFree(SendingPacket pkt_data, UInt16 tx_start_delay) {
       // Check if TX is allowed 
@@ -126,12 +149,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         UInt32 lbt_time1 = 0;
         UInt32 lbt_time2 = 0;
         if(lbt_channel_decod_1 >= 0 && lbt_channel_decod_2 >= 0) {
-          this.RegisterFpgaWrite(Registers.FPGA_LBT_TIMESTAMP_SELECT_CH, lbt_channel_decod_1);
-          lbt_time = lbt_time1 = (UInt32)(this.RegisterFpgaRead(Registers.FPGA_LBT_TIMESTAMP_CH) & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
+          this.FpgaRegisterWrite(Registers.FPGA_LBT_TIMESTAMP_SELECT_CH, lbt_channel_decod_1);
+          lbt_time = lbt_time1 = (UInt32)(this.FpgaRegisterRead(Registers.FPGA_LBT_TIMESTAMP_CH) & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
 
           if(lbt_channel_decod_1 != lbt_channel_decod_2) {
-            this.RegisterFpgaWrite(Registers.FPGA_LBT_TIMESTAMP_SELECT_CH, lbt_channel_decod_2);
-            lbt_time2 = (UInt32)(this.RegisterFpgaRead(Registers.FPGA_LBT_TIMESTAMP_CH) & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
+            this.FpgaRegisterWrite(Registers.FPGA_LBT_TIMESTAMP_SELECT_CH, lbt_channel_decod_2);
+            lbt_time2 = (UInt32)(this.FpgaRegisterRead(Registers.FPGA_LBT_TIMESTAMP_CH) & 0x0000FFFF) * 256; // 16bits (1LSB = 256µs) 
 
             if(lbt_time2 < lbt_time1) {
               lbt_time = lbt_time2;
