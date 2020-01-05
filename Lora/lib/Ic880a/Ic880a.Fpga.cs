@@ -47,8 +47,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       #endregion
     }
 
-    private Boolean _tx_notch_support = false;
-    private Byte _tx_notch_offset;
+    private readonly Boolean _tx_notch_support = false;
+    private readonly Byte _tx_notch_offset = 0;
 
     private Single FpgaGetTxNotchDelay() {
       Single tx_notch_delay;
@@ -63,8 +63,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       return tx_notch_delay;
     }
 
-    private void FpgaConfigure() {
-      /*int x;
+    /*private void FpgaConfigure(UInt32 tx_notch_freq) {
+      int x;
       int32_t val;
       bool spectral_scan_support, lbt_support;
 
@@ -77,8 +77,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // Get supported FPGA features 
       printf("INFO: FPGA supported features:");
       lgw_fpga_reg_r(LGW_FPGA_FEATURE, &val);
-      tx_notch_support = TAKE_N_BITS_FROM((uint8_t)val, 0, 1);
-      if(tx_notch_support == true) {
+      _tx_notch_support = TAKE_N_BITS_FROM((uint8_t)val, 0, 1);
+      if(_tx_notch_support == true) {
         printf(" [TX filter] ");
       }
       spectral_scan_support = TAKE_N_BITS_FROM((uint8_t)val, 1, 1);
@@ -107,9 +107,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
 
       // Configure TX notch filter 
-      if(tx_notch_support == true) {
-        tx_notch_offset = (32E6 / (2 * tx_notch_freq)) - 64;
-        x = lgw_fpga_reg_w(LGW_FPGA_NOTCH_FREQ_OFFSET, (int32_t)tx_notch_offset);
+      if(_tx_notch_support == true) {
+        _tx_notch_offset = (32E6 / (2 * tx_notch_freq)) - 64;
+        x = lgw_fpga_reg_w(LGW_FPGA_NOTCH_FREQ_OFFSET, (int32_t)_tx_notch_offset);
         if(x != LGW_REG_SUCCESS) {
           DEBUG_MSG("ERROR: Failed to configure FPGA TX notch filter\n");
           return LGW_REG_ERROR;
@@ -121,15 +121,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           DEBUG_MSG("ERROR: Failed to read FPGA TX notch frequency\n");
           return LGW_REG_ERROR;
         }
-        if(val != tx_notch_offset) {
+        if(val != _tx_notch_offset) {
           DEBUG_MSG("WARNING: TX notch filter frequency is not programmable (check your FPGA image)\n");
         } else {
-          DEBUG_PRINTF("INFO: TX notch filter frequency set to %u (%i)\n", tx_notch_freq, tx_notch_offset);
+          DEBUG_PRINTF("INFO: TX notch filter frequency set to %u (%i)\n", tx_notch_freq, _tx_notch_offset);
         }
       }
 
-      return LGW_REG_SUCCESS;*/
-    }
+      return LGW_REG_SUCCESS;
+    }*/
 
     private void FpgaRegisterWrite(FpgaRegisters register, Int32 value) => this.RegisterWrite(register, value, register.mux);
 
