@@ -547,6 +547,49 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       public static UInt32 FRAC_32MHz = 15625;
     }
 
+    private void PageSwitch(Byte targetPage) {
+      this._selectedPage = (Byte)(0x03 & targetPage);
+      this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this._selectedPage);
+    }
+
+    private void RegisterWrite(LGWRegisters register, Int32 value, Byte mux = 0) {
+      if (register.Equals(Registers.PAGE_REG)) {
+        this.PageSwitch((Byte)value);
+        return;
+      } else if (register.Equals(Registers.SOFT_RESET)) {
+        if ((value & 0x01) != 0) {
+          this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.SOFT_RESET.Address & 0x7F)), 0x80, mux);
+        }
+        return;
+      }
+      if (register.ReadonlyRegister) {
+        throw new ArgumentException("Register is a readonly register, you cant write!", register.GetType().ToString());
+      }
+      if (register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
+        this.PageSwitch((Byte)register.RegisterPage);
+      }
+      Byte[] buf = new Byte[4];
+      if (register.SizeInBits == 8 && register.BitOffset == 0) {
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), (Byte)value, mux);
+      } else if (register.BitOffset + register.SizeInBits <= 8) { // single-byte read-modify-write, offs:[0-7], leng:[1-7]
+        buf[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)), mux);
+        buf[1] = (Byte)(((1 << register.SizeInBits) - 1) << register.BitOffset); // bit mask
+        buf[2] = (Byte)(((Byte)value) << register.BitOffset); // new data offsetted
+        buf[3] = (Byte)((~buf[1] & buf[0]) | (buf[1] & buf[2])); // mixing old & new data
+        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), buf[3], mux);
+      } else if (register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) { // multi-byte direct write routine
+        Byte size = (Byte)((register.SizeInBits + 7) / 8); // add a byte if it's not an exact multiple of 8
+        Byte[] mbuf = new Byte[size];
+        for (Byte i = 0; i < size; ++i) { // big endian register file for a file on N bytes Least significant byte is stored in buf[0], most one in buf[N - 1]
+          mbuf[i] = (Byte)(0x000000FF & value);
+          value >>= 8;
+        }
+        this.SPIwriteRegisterBurstRaw((Byte)(0x80 | (register.Address & 0x7F)), mbuf, mux); // write the register in one burst
+      } else {
+        throw new ArgumentException("Register spanning multiple memory bytes but with an offset!", register.GetType().ToString());
+      }
+    }
+
     private Int32 RegisterRead(LGWRegisters register, Byte mux = 0) {
       if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
         this.PageSwitch((Byte)register.RegisterPage);
@@ -581,43 +624,60 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-    private void RegisterWrite(LGWRegisters register, Int32 value, Byte mux = 0) {
-      if(register.Equals(Registers.PAGE_REG)) {
-        this.PageSwitch((Byte)value);
-        return;
-      } else if(register.Equals(Registers.SOFT_RESET)) {
-        if((value & 0x01) != 0) {
-          this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.SOFT_RESET.Address & 0x7F)), 0x80, mux);
+    private void Connect() {
+      /*int spi_stat = LGW_SPI_SUCCESS;
+    uint8_t u = 0;
+    int x;*/
+
+      //if (spi_only == false) {
+        // Detect if the gateway has an FPGA with SPI mux header support 
+        // First, we assume there is an FPGA, and try to read its version 
+        Byte u = this.SPIreadRegister(Registers.VERSION.Address, 0x1);
+        /*if (check_fpga_version(u) != true) {
+          // We failed to read expected FPGA version, so let's assume there is no FPGA 
+          DEBUG_PRINTF("INFO: no FPGA detected or version not supported (v%u)\n", u);
+          lgw_spi_mux_mode = LGW_SPI_MUX_MODE0;
+        } else {
+          DEBUG_PRINTF("INFO: detected FPGA with SPI mux header (v%u)\n", u);
+          lgw_spi_mux_mode = LGW_SPI_MUX_MODE1;
+          // FPGA Soft Reset 
+          lgw_spi_w(lgw_spi_target, lgw_spi_mux_mode, LGW_SPI_MUX_TARGET_FPGA, 0, 1);
+          lgw_spi_w(lgw_spi_target, lgw_spi_mux_mode, LGW_SPI_MUX_TARGET_FPGA, 0, 0);
+          // FPGA configure 
+          x = lgw_fpga_configure(tx_notch_freq);
+          if (x != LGW_REG_SUCCESS) {
+            DEBUG_MSG("ERROR CONFIGURING FPGA\n");
+            return LGW_REG_ERROR;
+          }
         }
-        return;
-      }
-      if(register.ReadonlyRegister) {
-        throw new ArgumentException("Register is a readonly register, you cant write!", register.GetType().ToString());
-      }
-      if(register.RegisterPage != -1 && register.RegisterPage != this._selectedPage) {
-        this.PageSwitch((Byte)register.RegisterPage);
-      }
-      Byte[] buf = new Byte[4];
-      if(register.SizeInBits == 8 && register.BitOffset == 0) {
-        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), (Byte)value, mux);
-      } else if(register.BitOffset + register.SizeInBits <= 8) { // single-byte read-modify-write, offs:[0-7], leng:[1-7]
-        buf[0] = this.SPIreadRegister((Byte)(0x00 | (register.Address & 0x7F)), mux);
-        buf[1] = (Byte)(((1 << register.SizeInBits) - 1) << register.BitOffset); // bit mask
-        buf[2] = (Byte)(((Byte)value) << register.BitOffset); // new data offsetted
-        buf[3] = (Byte)((~buf[1] & buf[0]) | (buf[1] & buf[2])); // mixing old & new data
-        this.SPIwriteRegisterRaw((Byte)(0x80 | (register.Address & 0x7F)), buf[3], mux);
-      } else if(register.BitOffset == 0 && register.SizeInBits > 0 && register.SizeInBits <= 32) { // multi-byte direct write routine
-        Byte size = (Byte)((register.SizeInBits + 7) / 8); // add a byte if it's not an exact multiple of 8
-        Byte[] mbuf = new Byte[size];
-        for(Byte i = 0; i < size; ++i) { // big endian register file for a file on N bytes Least significant byte is stored in buf[0], most one in buf[N - 1]
-          mbuf[i] = (Byte)(0x000000FF & value);
-          value >>= 8;
+
+        // check SX1301 version 
+        spi_stat = lgw_spi_r(lgw_spi_target, lgw_spi_mux_mode, LGW_SPI_MUX_TARGET_SX1301, loregs[LGW_VERSION].addr, &u);
+        if (spi_stat != LGW_SPI_SUCCESS) {
+          DEBUG_MSG("ERROR READING CHIP VERSION REGISTER\n");
+          return LGW_REG_ERROR;
         }
-        this.SPIwriteRegisterBurstRaw((Byte)(0x80 | (register.Address & 0x7F)), mbuf, mux); // write the register in one burst
-      } else {
-        throw new ArgumentException("Register spanning multiple memory bytes but with an offset!", register.GetType().ToString());
-      }
+        if (u != loregs[LGW_VERSION].dflt) {
+          DEBUG_PRINTF("ERROR: NOT EXPECTED CHIP VERSION (v%u)\n", u);
+          return LGW_REG_ERROR;
+        }
+
+        // write 0 to the page/reset register 
+        spi_stat = lgw_spi_w(lgw_spi_target, lgw_spi_mux_mode, LGW_SPI_MUX_TARGET_SX1301, loregs[LGW_PAGE_REG].addr, 0);
+        if (spi_stat != LGW_SPI_SUCCESS) {
+          DEBUG_MSG("ERROR WRITING PAGE REGISTER\n");
+          return LGW_REG_ERROR;
+        } else {
+          lgw_regpage = 0;
+        }
+      //}
+
+      DEBUG_MSG("Note: success connecting the concentrator\n");
+      return LGW_REG_SUCCESS;*/
     }
+
+
+
 
     private Byte RegisterSx127xRead(Byte address) => this.SPIreadRegister(address, 0x1);
 
@@ -640,10 +700,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.SPIwriteRegisterBurstRaw((Byte)(0x80 | (register.Address & 0x7F)), value); // do the burst write 
     }
 
-    private void PageSwitch(Byte targetPage) {
-      this._selectedPage = (Byte)(0x03 & targetPage);
-      this.SPIwriteRegisterRaw((Byte)(0x80 | (Registers.PAGE_REG.Address & 0x7F)), this._selectedPage);
-    }
+    
 
     private void RegisterSx125xSetup(Byte rf_chain, Byte rf_clkout, Boolean rf_enable, RadioType rf_radio_type, UInt32 freq_hz) {
       Int32 cpt_attempts = 0;

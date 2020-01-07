@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using BlubbFish.Utils;
 
 namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
   public partial class Ic880a {
@@ -47,8 +48,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       #endregion
     }
 
-    private readonly Boolean _tx_notch_support = false;
-    private readonly Byte _tx_notch_offset = 0;
+    private Boolean _tx_notch_support = false;
+    private Byte _tx_notch_offset = 0;
 
     private Single FpgaGetTxNotchDelay() {
       Single tx_notch_delay;
@@ -63,73 +64,56 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       return tx_notch_delay;
     }
 
-    /*private void FpgaConfigure(UInt32 tx_notch_freq) {
-      int x;
+    private void FpgaConfigure(UInt32 tx_notch_freq) {
+      /*int x;
       int32_t val;
-      bool spectral_scan_support, lbt_support;
+      bool  lbt_support;*/
 
       // Check input parameters 
-      if((tx_notch_freq < LGW_MIN_NOTCH_FREQ) || (tx_notch_freq > LGW_MAX_NOTCH_FREQ)) {
-        DEBUG_PRINTF("WARNING: FPGA TX notch frequency is out of range (%u - [%u..%u]), setting it to default (%u)\n", tx_notch_freq, LGW_MIN_NOTCH_FREQ, LGW_MAX_NOTCH_FREQ, LGW_DEFAULT_NOTCH_FREQ);
-        tx_notch_freq = LGW_DEFAULT_NOTCH_FREQ;
+      if(tx_notch_freq < 126000U || tx_notch_freq > 250000U) {
+        Helper.WriteError("WARNING: FPGA TX notch frequency is out of range ("+ tx_notch_freq + " - ["+ 126000U + ".."+ 250000U + "]), setting it to default ("+ 129000U + ")");
+        tx_notch_freq = 129000U;
       }
 
       // Get supported FPGA features 
-      printf("INFO: FPGA supported features:");
-      lgw_fpga_reg_r(LGW_FPGA_FEATURE, &val);
-      _tx_notch_support = TAKE_N_BITS_FROM((uint8_t)val, 0, 1);
-      if(_tx_notch_support == true) {
-        printf(" [TX filter] ");
-      }
-      spectral_scan_support = TAKE_N_BITS_FROM((uint8_t)val, 1, 1);
-      if(spectral_scan_support == true) {
-        printf(" [Spectral Scan] ");
-      }
-      lbt_support = TAKE_N_BITS_FROM((uint8_t)val, 2, 1);
-      if(lbt_support == true) {
-        printf(" [LBT] ");
-      }
-      printf("\n");
+      Console.Write("INFO: FPGA supported features:");
+      Int32 val = this.FpgaRegisterRead(Registers.FPGA_FEATURE);
 
-      x = lgw_fpga_reg_w(LGW_FPGA_CTRL_INPUT_SYNC_I, 1);
-      x |= lgw_fpga_reg_w(LGW_FPGA_CTRL_INPUT_SYNC_Q, 1);
-      x |= lgw_fpga_reg_w(LGW_FPGA_CTRL_OUTPUT_SYNC, 0);
-      if(x != LGW_REG_SUCCESS) {
-        DEBUG_MSG("ERROR: Failed to configure FPGA TX synchro\n");
-        return LGW_REG_ERROR;
+      this._tx_notch_support = this.BitCheck((Byte)val, 0, 1) == 1;
+      if(this._tx_notch_support) {
+        Console.Write(" [TX filter] ");
       }
+      Boolean spectral_scan_support = this.BitCheck((Byte)val, 1, 1) == 1;
+      if(spectral_scan_support) {
+        Console.Write(" [Spectral Scan] ");
+      }
+      Boolean lbt_support = this.BitCheck((Byte)val, 2, 1) == 1;
+      if(lbt_support) {
+        Console.Write(" [LBT] ");
+      }
+      Console.Write("\n");
+
+      this.FpgaRegisterWrite(Registers.FPGA_CTRL_INPUT_SYNC_I, 1);
+      this.FpgaRegisterWrite(Registers.FPGA_CTRL_INPUT_SYNC_Q, 1);
+      this.FpgaRegisterWrite(Registers.FPGA_CTRL_OUTPUT_SYNC, 0);
 
       // Required for Semtech AP2 reference design 
-      x = lgw_fpga_reg_w(LGW_FPGA_CTRL_INVERT_IQ, 1);
-      if(x != LGW_REG_SUCCESS) {
-        DEBUG_MSG("ERROR: Failed to configure FPGA polarity\n");
-        return LGW_REG_ERROR;
-      }
+      this.FpgaRegisterWrite(Registers.FPGA_CTRL_INVERT_IQ, 1);
 
       // Configure TX notch filter 
-      if(_tx_notch_support == true) {
-        _tx_notch_offset = (32E6 / (2 * tx_notch_freq)) - 64;
-        x = lgw_fpga_reg_w(LGW_FPGA_NOTCH_FREQ_OFFSET, (int32_t)_tx_notch_offset);
-        if(x != LGW_REG_SUCCESS) {
-          DEBUG_MSG("ERROR: Failed to configure FPGA TX notch filter\n");
-          return LGW_REG_ERROR;
-        }
+      if(this._tx_notch_support) {
+        this._tx_notch_offset = (Byte)(32E6 / (2 * tx_notch_freq) - 64);
+        this.FpgaRegisterWrite(Registers.FPGA_NOTCH_FREQ_OFFSET, this._tx_notch_offset);
 
         // Readback to check that notch frequency is programmable 
-        x = lgw_fpga_reg_r(LGW_FPGA_NOTCH_FREQ_OFFSET, &val);
-        if(x != LGW_REG_SUCCESS) {
-          DEBUG_MSG("ERROR: Failed to read FPGA TX notch frequency\n");
-          return LGW_REG_ERROR;
-        }
-        if(val != _tx_notch_offset) {
-          DEBUG_MSG("WARNING: TX notch filter frequency is not programmable (check your FPGA image)\n");
+        val = this.FpgaRegisterRead(Registers.FPGA_NOTCH_FREQ_OFFSET);
+        if(val != this._tx_notch_offset) {
+          Console.WriteLine("WARNING: TX notch filter frequency is not programmable (check your FPGA image)");
         } else {
-          DEBUG_PRINTF("INFO: TX notch filter frequency set to %u (%i)\n", tx_notch_freq, _tx_notch_offset);
+          Console.WriteLine("INFO: TX notch filter frequency set to "+ tx_notch_freq + " ("+ this._tx_notch_offset + ")");
         }
       }
-
-      return LGW_REG_SUCCESS;
-    }*/
+    }
 
     private void FpgaRegisterWrite(FpgaRegisters register, Int32 value) => this.RegisterWrite(register, value, register.mux);
 
