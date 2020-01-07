@@ -1,4 +1,31 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2013, SEMTECH S.A.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * * Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ * * Neither the name of the Semtech corporation nor the
+ *   names of its contributors may be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL SEMTECH S.A. BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+using System;
 using System.Threading;
 using BlubbFish.Utils;
 
@@ -34,42 +61,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private readonly SByte[] _cal_offset_b_i = new SByte[8];
     private readonly SByte[] _cal_offset_b_q = new SByte[8];
     private readonly Lutstruct[] _lut = new Lutstruct[2] { new Lutstruct(0, 2, 3, 10, 14), new Lutstruct(0, 3, 3, 14, 27) };
-    private readonly Lgw_sx127x_FSK_bandwidth_s[] sx127x_FskBandwidths = {
-      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7),
-      new Lgw_sx127x_FSK_bandwidth_s(2600  , 2, 7 ),   /* LGW_SX127X_RXBW_2K6_HZ */
-      new Lgw_sx127x_FSK_bandwidth_s(3100  , 1, 7 ),   /* LGW_SX127X_RXBW_3K1_HZ */
-      new Lgw_sx127x_FSK_bandwidth_s(3900  , 0, 7 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(5200  , 2, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(6300  , 1, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(7800  , 0, 6 ),
-      new Lgw_sx127x_FSK_bandwidth_s(10400 , 2, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(12500 , 1, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(15600 , 0, 5 ),
-      new Lgw_sx127x_FSK_bandwidth_s(20800 , 2, 4 ),
-      new Lgw_sx127x_FSK_bandwidth_s(25000 , 1, 4 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(31300 , 0, 4 ),
-      new Lgw_sx127x_FSK_bandwidth_s(41700 , 2, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(50000 , 1, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(62500 , 0, 3 ),
-      new Lgw_sx127x_FSK_bandwidth_s(83333 , 2, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(100000, 1, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(125000, 0, 2 ),
-      new Lgw_sx127x_FSK_bandwidth_s(166700, 2, 1 ),
-      new Lgw_sx127x_FSK_bandwidth_s(200000, 1, 1 ),   /* ... */
-      new Lgw_sx127x_FSK_bandwidth_s(250000, 0, 1 )    /* LGW_SX127X_RXBW_250K_HZ */
-    };
     #endregion
 
     
 
     private Thread _recieverThread;
     private Boolean _recieverThreadRunning = false;
-    private Boolean _isrecieving = false;
+    //private Boolean _isrecieving = false;
     private Boolean _istransmitting = false;
     private readonly Object HandleControllerIOLock = new Object();
     private Boolean _deviceStarted = false;
 
-    private Byte _selectedPage;
+    
 
     
 
@@ -120,25 +123,27 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         this._CrcEnabled = Boolean.Parse(this.config["crc"]);
 
+        this._lorawan_public = Boolean.Parse(this.config["lorawan"]);
+
         this.LbtParseConfig();
 
 
-        /*this.PinChipSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
-        this.PinInt0 = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
-        this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
-        this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
+        //this.PinChipSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
+        //this.PinInt0 = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
+        //this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
+        //this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
 
-        this._freq = Int32.Parse(this.config["freq"]);
-        this._sf = Byte.Parse(this.config["sf"]);
-        this._bw = Int32.Parse(this.config["bw"]);
-        this._cr = Byte.Parse(this.config["cr"]);
+        //this._freq = Int32.Parse(this.config["freq"]);
+        //this._sf = Byte.Parse(this.config["sf"]);
+        //this._bw = Int32.Parse(this.config["bw"]);
+        //this._cr = Byte.Parse(this.config["cr"]);
 
-        this._syncWord = Byte.Parse(this.config["syncword"]);
-        this._preambleLength = UInt16.Parse(this.config["preamblelength"]);
+        //this._syncWord = Byte.Parse(this.config["syncword"]);
+        //this._preambleLength = UInt16.Parse(this.config["preamblelength"]);
 
-        this._currentLimit = Byte.Parse(this.config["currentlimit"]);
-        this._power = SByte.Parse(this.config["power"]);
-        this._gain = Byte.Parse(this.config["gain"]);*/
+        //this._currentLimit = Byte.Parse(this.config["currentlimit"]);
+        //this._power = SByte.Parse(this.config["power"]);
+        //this._gain = Byte.Parse(this.config["gain"]);
       } catch(Exception e) {
         throw new ArgumentException("Some Argument is not set in settings.ini: " + e.Message);
       }

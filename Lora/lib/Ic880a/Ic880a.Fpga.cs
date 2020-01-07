@@ -1,4 +1,31 @@
-﻿using System;
+﻿/*
+ * Copyright (c) 2013, SEMTECH S.A.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * * Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ * * Neither the name of the Semtech corporation nor the
+ *   names of its contributors may be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL SEMTECH S.A. BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Text;
 using BlubbFish.Utils;
@@ -50,6 +77,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     private Boolean _tx_notch_support = false;
     private Byte _tx_notch_offset = 0;
+    private readonly Byte[] FPGA_VERSION = { 31, 33 }; // several versions could be supported 
 
     private Single FpgaGetTxNotchDelay() {
       Single tx_notch_delay;
@@ -58,17 +86,13 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         return 0;
       }
 
-      /* Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate */
-      tx_notch_delay = 31.25f * ((64 + this._tx_notch_offset) / 2f) / 1E3f; /* 32MHz => 31.25ns */
+      // Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate 
+      tx_notch_delay = 31.25f * ((64 + this._tx_notch_offset) / 2f) / 1E3f; // 32MHz => 31.25ns 
 
       return tx_notch_delay;
     }
 
     private void FpgaConfigure(UInt32 tx_notch_freq) {
-      /*int x;
-      int32_t val;
-      bool  lbt_support;*/
-
       // Check input parameters 
       if(tx_notch_freq < 126000U || tx_notch_freq > 250000U) {
         Helper.WriteError("WARNING: FPGA TX notch frequency is out of range ("+ tx_notch_freq + " - ["+ 126000U + ".."+ 250000U + "]), setting it to default ("+ 129000U + ")");
@@ -118,5 +142,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private void FpgaRegisterWrite(FpgaRegisters register, Int32 value) => this.RegisterWrite(register, value, register.mux);
 
     private Int32 FpgaRegisterRead(FpgaRegisters register) => this.RegisterRead(register, register.mux);
+
+    private Boolean CheckFpgaVersion(Byte version) {
+      for(Int32 i = 0; i < this.FPGA_VERSION.Length; i++) {
+        if(this.FPGA_VERSION[i] == version) {
+          return true;
+        }
+      }
+
+      return false;
+    }
   }
 }

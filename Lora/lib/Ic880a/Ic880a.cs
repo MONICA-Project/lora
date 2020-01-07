@@ -48,11 +48,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     public override void Begin() {
       this.SetupIO();
       this.Reset();
-      if(this.RegisterRead(Registers.VERSION) != Registers.VERSION.DefaultValue) {
-        throw new Exception("Register VERSION did not match!");
-      }
-      this.PageSwitch(0);
-      this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
+      this.Connect();
+      this.SoftReset(); //reset the registers (also shuts the radios down)
       this.StartRadio();
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.Begin(): Succsessfull init Ic880a-board with SX1231 Chip!");
     }
@@ -64,7 +61,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         Thread.Sleep(10);
       }
       this._recieverThread = null;
-      this.RegisterWrite(Registers.SOFT_RESET, 1); //reset the registers (also shuts the radios down)
+      this.SoftReset(); //reset the registers (also shuts the radios down)
       this.SPIwriteRegisterRaw(0, 128);
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.Dispose(): Succsessfull shutdown Ic880a-board with SX1231 Chip!");
     }
@@ -88,7 +85,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this._recieverThread = new Thread(this.RecieverThreadRunner);
       this._recieverThreadRunning = true;
       this._recieverThread.Start();
-      this._isrecieving = true;
+      //this._isrecieving = true;
     }
     #endregion
 
@@ -104,18 +101,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       Thread.Sleep(5);
       this.RegisterWrite(Registers.RADIO_RST, 0);
 
-      this.RegisterSx125xSetup(0, 1, this._radioEnabled[0], RadioType.SX1257, this._radioFrequency[0]);
-      this.RegisterSx125xSetup(1, 1, this._radioEnabled[1], RadioType.SX1257, this._radioFrequency[1]);
+      this.SetupSx125x(0, 1, this._radioEnabled[0], RadioType.SX1257, this._radioFrequency[0]);
+      this.SetupSx125x(1, 1, this._radioEnabled[1], RadioType.SX1257, this._radioFrequency[1]);
 
       this.RegisterWrite(Registers.GPIO_MODE, 31); // gives AGC control of GPIOs to enable Tx external digital filter 
       this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); // Set all GPIOs as output 
 
-      /* Configure LBT */
+      // Configure LBT 
       if(this._lbt_enabled) {
         this.RegisterWrite(Registers.CLK32M_EN, 1);
         this.LbtSetup();
 
-        /* Start SX1301 counter and LBT FSM at the same time to be in sync */
+        // Start SX1301 counter and LBT FSM at the same time to be in sync 
         this.RegisterWrite(Registers.CLK32M_EN, 0);
         this.LbtStart();
       }
@@ -407,7 +404,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       //this.PinReset.PinMode = GpioPinDriveMode.Input;
     }
 
-    UInt32 LgwTimeOnAir(SendingPacket packet) {
+    UInt32 TimeOnAir(SendingPacket packet) {
       if(packet.modulation == Modulation.Lora) {
         // Get bandwidth 
         UInt16 bw = packet.bandwidth switch
@@ -465,8 +462,36 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         throw new Exception("ERROR: Cannot compute time on air for this packet, unsupported modulation (" + packet.modulation + ")");
       }
     }
-    #endregion
+    
+    UInt16 GetTxStartDelay(Boolean tx_notch_enable, BW bw) {
+      Single notch_delay_us = 0.0f;
+      Single bw_delay_us = 0.0f;
+      Single tx_start_delay;
 
+      // Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate 
+      if(tx_notch_enable) {
+        notch_delay_us = this.FpgaGetTxNotchDelay();
+      }
+
+      // Calibrated delay brought by SX1301 depending on signal bandwidth 
+      switch(bw) {
+        case BW.BW_125KHZ:
+          bw_delay_us = 1.5f;
+          break;
+        case BW.BW_500KHZ:
+        // Intended fall-through: it is the calibrated reference 
+        default:
+          break;
+      }
+
+      tx_start_delay = 1497 - bw_delay_us - notch_delay_us;
+
+      Console.WriteLine("INFO: tx_start_delay=" + (UInt16)tx_start_delay + " (" + tx_start_delay + ") - (" + 1497 + ", bw_delay=" + bw_delay_us + ", notch_delay=" + notch_delay_us + ")");
+
+      return (UInt16)tx_start_delay; // keep truncating instead of rounding: better behaviour measured 
+    }
+    #endregion
+    
     #region Recieve
     private void RecieverThreadRunner() {
       Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880alora.ReceiveRunner(): gestartet!");
@@ -676,7 +701,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     }
     #endregion
-
+    
     #region Transmit
     private void Transmit(SendingPacket pkt_data) {
       // check input range (segfault prevention) 
@@ -802,14 +827,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           SF.DR_LORA_SF12 => 12,
           _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.datarate_lora + " IN SWITCH STATEMENT"),
         };
-        buff[9] |= pkt_data.coderate switch
+        //#TODO THIS FUCKS UP THE COMPILER!!!! 
+        /*buff[9] |= pkt_data.coderate switch
         {
           CR.CR_LORA_4_5 => 1 << 4,
           CR.CR_LORA_4_6 => 2 << 4,
           CR.CR_LORA_4_7 => 3 << 4,
           CR.CR_LORA_4_8 => 4 << 4,
           _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.coderate + " IN SWITCH STATEMENT"),
-        };
+        };*/
         if(pkt_data.no_crc == false) {
           buff[9] |= 0x80; // set 'CRC enable' bit 
         } else {
@@ -900,7 +926,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // MSB of RF frequency is now used in AGC firmware to implement large/narrow filtering in SX1257/55 
         buff[0] &= 0x7F; // Always use narrow band for FSK (force MSB to 0) 
-
+        
       } else {
         throw new Exception("ERROR: INVALID TX MODULATION..");
       }
@@ -947,39 +973,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
     }
 
-
-    
-
-    UInt16 GetTxStartDelay(Boolean tx_notch_enable, BW bw) {
-      Single notch_delay_us = 0.0f;
-      Single bw_delay_us = 0.0f;
-      Single tx_start_delay;
-
-      // Notch filtering performed by FPGA adds a constant delay (group delay) that we need to compensate 
-      if(tx_notch_enable) {
-        notch_delay_us = this.FpgaGetTxNotchDelay();
-      }
-
-      // Calibrated delay brought by SX1301 depending on signal bandwidth 
-      switch(bw) {
-        case BW.BW_125KHZ:
-          bw_delay_us = 1.5f;
-          break;
-        case BW.BW_500KHZ:
-        /* Intended fall-through: it is the calibrated reference */
-        default:
-          break;
-      }
-
-      tx_start_delay = 1497 - bw_delay_us - notch_delay_us;
-
-      Console.WriteLine("INFO: tx_start_delay="+ (UInt16)tx_start_delay + " ("+ tx_start_delay + ") - ("+ 1497 + ", bw_delay="+ bw_delay_us + ", notch_delay="+ notch_delay_us + ")");
-
-      return (UInt16)tx_start_delay; // keep truncating instead of rounding: better behaviour measured 
-    }
-
-    
-
     private SendingPacket PrepareSend(Byte[] data, Byte @interface) => new SendingPacket {
       bandwidth = this._loraBandwidth,
       coderate = CR.CR_LORA_4_7,
@@ -999,7 +992,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       tx_mode = SendingMode.IMMEDIATE
     };
     #endregion
-
+    
     private void SetupIO() {
       Pi.Spi.SetProperty("Channel" + this.SpiChannel.Channel.ToString() + "Frequency", 100000.ToString());
       this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
