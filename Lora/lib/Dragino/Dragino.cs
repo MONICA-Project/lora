@@ -19,6 +19,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Dragino {
     public Dragino(Dictionary<String, String> settings) : base(settings) {
       Pi.Init<BootstrapWiringPi>();
       this.ParseConfig();
+      this.Interfaces = 1;
     }
 
     public override void Begin() {

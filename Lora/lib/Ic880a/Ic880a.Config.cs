@@ -53,7 +53,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private readonly UInt64 _fskSyncWord = 0xC194C1;
     private Boolean _CrcEnabled = true;
     private Boolean _lorawan_public = false;
-    
 
     #region Sending Parameters
     private readonly SByte[] _cal_offset_a_i = new SByte[8];
@@ -63,18 +62,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private readonly Lutstruct[] _lut = new Lutstruct[2] { new Lutstruct(0, 2, 3, 10, 14), new Lutstruct(0, 3, 3, 14, 27) };
     #endregion
 
-    
-
     private Thread _recieverThread;
     private Boolean _recieverThreadRunning = false;
     //private Boolean _isrecieving = false;
     private Boolean _istransmitting = false;
     private readonly Object HandleControllerIOLock = new Object();
     private Boolean _deviceStarted = false;
-
-    
-
-    
 
     private void ParseConfig() {
       try {

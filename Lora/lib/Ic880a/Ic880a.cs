@@ -43,6 +43,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     public Ic880a(Dictionary<String, String> settings) : base(settings) {
       Pi.Init<BootstrapWiringPi>();
       this.ParseConfig();
+      this.Interfaces = 8;
     }
 
     public override void Begin() {
@@ -701,45 +702,45 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     }
     #endregion
-    
+
     #region Transmit
     private void Transmit(SendingPacket pkt_data) {
       // check input range (segfault prevention) 
-      if(pkt_data.rf_chain >= 2) {
+      if (pkt_data.rf_chain >= 2) {
         throw new Exception("ERROR: INVALID RF_CHAIN TO SEND PACKETS");
       }
 
       // check input variables 
-      if(this._radioEnableTx[pkt_data.rf_chain] == false) {
+      if (this._radioEnableTx[pkt_data.rf_chain] == false) {
         throw new Exception("ERROR: SELECTED RF_CHAIN IS DISABLED FOR TX ON SELECTED BOARD");
       }
-      if(this._radioEnabled[pkt_data.rf_chain] == false) {
+      if (this._radioEnabled[pkt_data.rf_chain] == false) {
         throw new Exception("ERROR: SELECTED RF_CHAIN IS DISABLED");
       }
-      if(pkt_data.tx_mode != SendingMode.IMMEDIATE && pkt_data.tx_mode != SendingMode.TIMESTAMPED && pkt_data.tx_mode != SendingMode.ON_GPS) {
+      if (pkt_data.tx_mode != SendingMode.IMMEDIATE && pkt_data.tx_mode != SendingMode.TIMESTAMPED && pkt_data.tx_mode != SendingMode.ON_GPS) {
         throw new Exception("ERROR: TX_MODE NOT SUPPORTED");
       }
-      if(pkt_data.modulation == Modulation.Lora) {
-        if(pkt_data.bandwidth != BW.BW_125KHZ && pkt_data.bandwidth != BW.BW_250KHZ && pkt_data.bandwidth != BW.BW_500KHZ) {
+      if (pkt_data.modulation == Modulation.Lora) {
+        if (pkt_data.bandwidth != BW.BW_125KHZ && pkt_data.bandwidth != BW.BW_250KHZ && pkt_data.bandwidth != BW.BW_500KHZ) {
           throw new Exception("ERROR: BANDWIDTH NOT SUPPORTED BY LORA TX");
         }
-        if(pkt_data.datarate_lora != SF.DR_LORA_SF7 && pkt_data.datarate_lora != SF.DR_LORA_SF8 && pkt_data.datarate_lora != SF.DR_LORA_SF9 && pkt_data.datarate_lora != SF.DR_LORA_SF10 && pkt_data.datarate_lora != SF.DR_LORA_SF11 && pkt_data.datarate_lora != SF.DR_LORA_SF12) {
+        if (pkt_data.datarate_lora != SF.DR_LORA_SF7 && pkt_data.datarate_lora != SF.DR_LORA_SF8 && pkt_data.datarate_lora != SF.DR_LORA_SF9 && pkt_data.datarate_lora != SF.DR_LORA_SF10 && pkt_data.datarate_lora != SF.DR_LORA_SF11 && pkt_data.datarate_lora != SF.DR_LORA_SF12) {
           throw new Exception("ERROR: DATARATE NOT SUPPORTED BY LORA TX");
         }
-        if(pkt_data.coderate != CR.CR_LORA_4_5 && pkt_data.coderate != CR.CR_LORA_4_6 && pkt_data.coderate != CR.CR_LORA_4_7 && pkt_data.coderate != CR.CR_LORA_4_8) {
+        if (pkt_data.coderate != CR.CR_LORA_4_5 && pkt_data.coderate != CR.CR_LORA_4_6 && pkt_data.coderate != CR.CR_LORA_4_7 && pkt_data.coderate != CR.CR_LORA_4_8) {
           throw new Exception("ERROR: CODERATE NOT SUPPORTED BY LORA TX");
         }
-        if(pkt_data.payload.Length > 255) {
+        if (pkt_data.payload.Length > 255) {
           throw new Exception("ERROR: PAYLOAD LENGTH TOO BIG FOR LORA TX");
         }
-      } else if(pkt_data.modulation == Modulation.Fsk) {
-        if(pkt_data.f_dev < 1 || pkt_data.f_dev > 200) {
+      } else if (pkt_data.modulation == Modulation.Fsk) {
+        if (pkt_data.f_dev < 1 || pkt_data.f_dev > 200) {
           throw new Exception("ERROR: TX FREQUENCY DEVIATION OUT OF ACCEPTABLE RANGE");
         }
-        if(!(pkt_data.datarate_fsk >= 500 && pkt_data.datarate_fsk <= 250000)) {
+        if (!(pkt_data.datarate_fsk >= 500 && pkt_data.datarate_fsk <= 250000)) {
           throw new Exception("ERROR: DATARATE NOT SUPPORTED BY FSK IF CHAIN");
         }
-        if(pkt_data.payload.Length > 255) {
+        if (pkt_data.payload.Length > 255) {
           throw new Exception("ERROR: PAYLOAD LENGTH TOO BIG FOR FSK TX");
         }
       } else {
@@ -754,15 +755,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
       // interpretation of TX power 
       Int32 pow_index; // 4-bit value to set the firmware TX power 
-      for(pow_index = this._lut.Length - 1; pow_index > 0; pow_index--) {
-        if(this._lut[pow_index].rf_power <= pkt_data.rf_power) {
+      for (pow_index = this._lut.Length - 1; pow_index > 0; pow_index--) {
+        if (this._lut[pow_index].rf_power <= pkt_data.rf_power) {
           break;
         }
       }
 
       // loading TX imbalance correction 
       Byte target_mix_gain = this._lut[pow_index].mix_gain; // used to select the proper I/Q offset correction 
-      if(pkt_data.rf_chain == 0) { // use radio A calibration table 
+      if (pkt_data.rf_chain == 0) { // use radio A calibration table 
         this.RegisterWrite(Registers.TX_OFFSET_I, this._cal_offset_a_i[target_mix_gain - 8]);
         this.RegisterWrite(Registers.TX_OFFSET_Q, this._cal_offset_a_q[target_mix_gain - 8]);
       } else { // use radio B calibration table 
@@ -780,7 +781,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // metadata 0 to 2, TX PLL frequency 
       UInt32 part_int; // integer part for PLL register value calculation 
       UInt32 part_frac; // fractional part for PLL register value calculation 
-      switch(this._rf_radio_type[0]) { // we assume that there is only one radio type on the board 
+      switch (this._rf_radio_type[0]) { // we assume that there is only one radio type on the board 
         case RadioType.SX1255:
           part_int = pkt_data.freq_hz / (15625 << 7); // integer part, gives the MSB 
           part_frac = ((pkt_data.freq_hz % (15625 << 7)) << 9) / 15625; // fractional part, gives middle part and LSB 
@@ -790,10 +791,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           part_frac = ((pkt_data.freq_hz % (15625 << 8)) << 8) / 15625; // fractional part, gives middle part and LSB 
           break;
         default:
-          throw new Exception("ERROR: UNEXPECTED VALUE "+ this._rf_radio_type[0] + " FOR RADIO TYPE");
+          throw new Exception("ERROR: UNEXPECTED VALUE " + this._rf_radio_type[0] + " FOR RADIO TYPE");
       }
 
-      Byte[] buff = new Byte[pkt_data.payload.Length + (pkt_data.modulation == Modulation.Lora ? 16: 17)]; // buffer to prepare the packet to send + metadata before SPI write burst 
+      Byte[] buff = new Byte[pkt_data.payload.Length + (pkt_data.modulation == Modulation.Lora ? 16 : 17)]; // buffer to prepare the packet to send + metadata before SPI write burst 
       buff[0] = (Byte)(0xFF & part_int); // Most Significant Byte 
       buff[1] = (Byte)(0xFF & (part_frac >> 8)); // middle byte 
       buff[2] = (Byte)(0xFF & part_frac); // Least Significant Byte 
@@ -801,7 +802,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // metadata 3 to 6, timestamp trigger value 
       // TX state machine must be triggered at (T0 - lgw_i_tx_start_delay_us) for packet to start being emitted at T0 
       UInt32 count_trig; // timestamp value in trigger mode corrected for TX start delay 
-      if(pkt_data.tx_mode == SendingMode.TIMESTAMPED) {
+      if (pkt_data.tx_mode == SendingMode.TIMESTAMPED) {
         count_trig = pkt_data.count_us - tx_start_delay;
         buff[3] = (Byte)(0xFF & (count_trig >> 24));
         buff[4] = (Byte)(0xFF & (count_trig >> 16));
@@ -810,7 +811,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       }
 
       // parameters depending on modulation  
-      if(pkt_data.modulation == Modulation.Lora) {
+      if (pkt_data.modulation == Modulation.Lora) {
         // metadata 7, modulation type, radio chain selection and TX power 
         buff[7] = (Byte)((0x20 & (pkt_data.rf_chain << 5)) | (0x0F & pow_index)); // bit 4 is 0 -> LoRa modulation 
 
@@ -827,16 +828,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           SF.DR_LORA_SF12 => 12,
           _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.datarate_lora + " IN SWITCH STATEMENT"),
         };
-        //#TODO THIS FUCKS UP THE COMPILER!!!! 
-        /*buff[9] |= pkt_data.coderate switch
+        buff[9] |= pkt_data.coderate switch
         {
-          CR.CR_LORA_4_5 => 1 << 4,
-          CR.CR_LORA_4_6 => 2 << 4,
-          CR.CR_LORA_4_7 => 3 << 4,
-          CR.CR_LORA_4_8 => 4 << 4,
+          CR.CR_LORA_4_5 => (Byte)(1 << 4),
+          CR.CR_LORA_4_6 => (Byte)(2 << 4),
+          CR.CR_LORA_4_7 => (Byte)(3 << 4),
+          CR.CR_LORA_4_8 => (Byte)(4 << 4),
           _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.coderate + " IN SWITCH STATEMENT"),
-        };*/
-        if(pkt_data.no_crc == false) {
+        };
+        if (pkt_data.no_crc == false) {
           buff[9] |= 0x80; // set 'CRC enable' bit 
         } else {
           Console.WriteLine("Info: packet will be sent without CRC");
@@ -853,20 +853,20 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           BW.BW_500KHZ => 2,
           _ => throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.bandwidth + " IN SWITCH STATEMENT"),
         };
-        if(pkt_data.no_header == true) {
+        if (pkt_data.no_header == true) {
           buff[11] |= 0x04; // set 'implicit header' bit 
         }
-        if(pkt_data.bandwidth == BW.BW_125KHZ && (pkt_data.datarate_lora == SF.DR_LORA_SF11 || pkt_data.datarate_lora == SF.DR_LORA_SF12) || pkt_data.bandwidth == BW.BW_250KHZ && pkt_data.datarate_lora == SF.DR_LORA_SF12) { 
+        if (pkt_data.bandwidth == BW.BW_125KHZ && (pkt_data.datarate_lora == SF.DR_LORA_SF11 || pkt_data.datarate_lora == SF.DR_LORA_SF12) || pkt_data.bandwidth == BW.BW_250KHZ && pkt_data.datarate_lora == SF.DR_LORA_SF12) {
           buff[11] |= 0x08; // set 'PPM offset' bit at 1 
         }
-        if(pkt_data.invert_pol == true) {
+        if (pkt_data.invert_pol == true) {
           buff[11] |= 0x10; // set 'TX polarity' bit at 1 
         }
 
         // metadata 12 & 13, LoRa preamble size 
-        if(pkt_data.preamble == 0) { // if not explicit, use recommended LoRa preamble size 
+        if (pkt_data.preamble == 0) { // if not explicit, use recommended LoRa preamble size 
           pkt_data.preamble = 8;
-        } else if(pkt_data.preamble < 6) { // enforce minimum preamble size 
+        } else if (pkt_data.preamble < 6) { // enforce minimum preamble size 
           pkt_data.preamble = 6;
           Console.WriteLine("Note: preamble length adjusted to respect minimum LoRa preamble size");
         }
@@ -879,16 +879,16 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // MSB of RF frequency is now used in AGC firmware to implement large/narrow filtering in SX1257/55 
         buff[0] &= 0x3F; // Unset 2 MSBs of frequency code 
-        if(pkt_data.bandwidth == BW.BW_500KHZ) {
+        if (pkt_data.bandwidth == BW.BW_500KHZ) {
           buff[0] |= 0x80; // Set MSB bit to enlarge analog filter for 500kHz BW 
         }
 
         // Set MSB-1 bit to enable digital filter if required 
-        if(tx_notch_enable == true) {
+        if (tx_notch_enable == true) {
           Console.WriteLine("INFO: Enabling TX notch filter");
           buff[0] |= 0x40;
         }
-      } else if(pkt_data.modulation == Modulation.Fsk) {
+      } else if (pkt_data.modulation == Modulation.Fsk) {
         // metadata 7, modulation type, radio chain selection and TX power 
         buff[7] = (Byte)((0x20 & (pkt_data.rf_chain << 5)) | 0x10 | (0x0F & pow_index)); // bit 4 is 1 -> FSK modulation 
 
@@ -905,9 +905,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         buff[11] = (Byte)(0x01 | (pkt_data.no_crc ? 0 : 0x02) | (0x02 << 2)); // always in variable length packet mode, whitening, and CCITT CRC if CRC is not disabled  
 
         // metadata 12 & 13, FSK preamble size 
-        if(pkt_data.preamble == 0) { // if not explicit, use LoRa MAC preamble size 
+        if (pkt_data.preamble == 0) { // if not explicit, use LoRa MAC preamble size 
           pkt_data.preamble = 5;
-        } else if(pkt_data.preamble < 3) { // enforce minimum preamble size 
+        } else if (pkt_data.preamble < 3) { // enforce minimum preamble size 
           pkt_data.preamble = 3;
           Console.WriteLine("Note: preamble length adjusted to respect minimum FSK preamble size");
         }
@@ -926,7 +926,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // MSB of RF frequency is now used in AGC firmware to implement large/narrow filtering in SX1257/55 
         buff[0] &= 0x7F; // Always use narrow band for FSK (force MSB to 0) 
-        
+
       } else {
         throw new Exception("ERROR: INVALID TX MODULATION..");
       }
@@ -935,10 +935,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.RegisterWrite(Registers.TX_START_DELAY, tx_start_delay);
 
       // copy payload from user struct to buffer containing metadata 
-      for(Int32 i = 0; i < pkt_data.payload.Length; i++) {
+      for (Int32 i = 0; i < pkt_data.payload.Length; i++) {
         buff[i + payload_offset] = pkt_data.payload[i];
       }
-      if(buff.Length != transfer_size) {
+      if (buff.Length != transfer_size) {
         throw new Exception("Payload size not match!");
       }
 
@@ -951,8 +951,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       //DEBUG_ARRAY(i, transfer_size, buff);
 
       Boolean tx_allowed = this.LbtIsChannelFree(pkt_data, tx_start_delay);
-      if(tx_allowed == true) {
-        switch(pkt_data.tx_mode) {
+      if (tx_allowed == true) {
+        switch (pkt_data.tx_mode) {
           case SendingMode.IMMEDIATE:
             this.RegisterWrite(Registers.TX_TRIG_IMMEDIATE, 1);
             break;
@@ -966,10 +966,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
             break;
 
           default:
-            throw new Exception("ERROR: UNEXPECTED VALUE "+ pkt_data.tx_mode + " IN SWITCH STATEMENT");
+            throw new Exception("ERROR: UNEXPECTED VALUE " + pkt_data.tx_mode + " IN SWITCH STATEMENT");
         }
       } else {
         throw new Exception("ERROR: Cannot send packet, channel is busy (LBT)");
+      }
+
+      while (true) {
+        Int32 reg = this.RegisterRead(Registers.TX_STATUS);
+        if ((reg & 0x10) == 0) {
+          return;
+        }
+        Thread.Sleep(1);
       }
     }
 

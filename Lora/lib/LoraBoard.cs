@@ -13,6 +13,8 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
     public delegate void RecieveUpdate(Object sender, RecievedData e);
     public delegate void TransmittedUpdate(Object sender, TransmittedData e);
 
+    public Byte Interfaces { get; protected set; }
+
     #region Constructor and deconstructor
     protected LoraBoard(Dictionary<String, String> settings) => this.config = settings;
     public static LoraBoard GetInstance(Dictionary<String, String> settings) {

@@ -59,7 +59,9 @@ namespace Fraunhofer.Fit.Iot.Lora {
       while(this._testThreadRunning) {
         if((DateTime.Now - start).TotalSeconds > 30) {
           try {
-            this.loraboard.Send(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"), 0);
+            for (Byte i = 0; i < this.loraboard.Interfaces; i++) {
+              this.loraboard.Send(System.Text.Encoding.UTF8.GetBytes("TEST TEST TEST"), i);
+            }
           } catch(Exception e) {
             Helper.WriteError("Error while Loading Fraunhofer.Fit.Iot.Lora.LoraController.TestRunner: " + e.Message + "\n\n" + e.StackTrace);
           }
