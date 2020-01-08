@@ -154,12 +154,17 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.RegisterWrite(Registers.PAGE_REG, 3); // Calibration will start on this condition as soon as MCU can talk to concentrator registers 
       this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 0); // Give control of concentrator registers to MCU 
 
-      //Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); // Wait for calibration to end 
+      Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); // Wait for calibration to end 
       Thread.Sleep(cal_time); // Wait for end of calibration 
       this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 1); // Take back control 
 
       Int32 cal_status = this.RegisterRead(Registers.MCU_AGC_STATUS);
       if((cal_status & 0x81) != 0x81) {  //bit 0: could access SX1301 registers
+        for(Int32 i = 0; i < 10; i++) {
+          Int32 st = this.RegisterRead(Registers.MCU_AGC_STATUS);
+          Console.WriteLine(st);
+          Thread.Sleep(1000);
+        }
         throw new Exception("ERROR: CALIBRATION FAILURE (STATUS = " + cal_status + ")");
       } else { //bit 7: calibration finished
         //Console.WriteLine("Note: calibration finished (status = "+ cal_status + ")");
@@ -392,7 +397,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private void Reset() {
       Thread.Sleep(150);
       this.PinReset.Write(GpioPinValue.Low);
-      //Thread.Sleep(150);
+      this.PinReset.Write(GpioPinValue.High);
+      this.PinReset.Write(GpioPinValue.Low);
+      Thread.Sleep(150);
       this.SPIwriteRegisterRaw(0, 128);
       this.SPIwriteRegisterRaw(0, 0);
       Thread.Sleep(32); // provide at least 16 cycles on CLKHS and 16 cycles CLK32M

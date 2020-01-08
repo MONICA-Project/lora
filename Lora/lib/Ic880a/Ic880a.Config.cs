@@ -82,7 +82,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           this._radioEnabled[1] = true;
           this._radioFrequency[1] = UInt32.Parse(this.config["frequency1"]);
         }
-
+        if(this.config.ContainsKey("radio0tx") && this._radioEnabled[0]) {
+          this._radioEnableTx[0] = Boolean.Parse(this.config["radio0tx"]);
+        }
+        if(this.config.ContainsKey("radio1tx") && this._radioEnabled[1]) {
+          this._radioEnableTx[1] = Boolean.Parse(this.config["radio1tx"]);
+        }
         for(Byte i = 0; i < 10; i++) {
           if(this.config.ContainsKey("interface" + i + "frequency")) {
             Int32 offset = Int32.Parse(this.config["interface" + i + "frequency"]);

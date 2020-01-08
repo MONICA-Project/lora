@@ -36,7 +36,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
 
     protected Int32 BitCheck(Byte b, Int32 p, Int32 n) => ((b) >> (p)) & ((1 << (n)) - 1);
 
-    protected Byte SPIreadRegister(Byte address, Byte mux = 0) => mux == 0 ? this.MultiSPI(SPICommands.Read, address, null, 1)[0] : this.MultiSPIMux(SPICommands.Read, address, null, 1, mux)[1];
+    protected Byte SPIreadRegister(Byte address, Byte mux = 0) => mux == 0 ? this.MultiSPI(SPICommands.Read, address, null, 1)[0] : this.MultiSPIMux(SPICommands.Read, address, null, 1, mux)[0];
 
     protected void SPIwriteRegister(Byte address, Byte data) => this.MultiSPI(SPICommands.Write, (Byte)(address | SPICommands.Write), new Byte[] { data }, 1);
 
@@ -106,7 +106,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib {
       tx[1] = address;
       if(cmd == SPICommands.Write) {
         for(UInt16 i = 0; i < size; i++) {
-          tx[i + 1] = value[i];
+          tx[i + 2] = value[i];
         }
       }
       this.PinChipSelect.Write(GpioPinValue.Low);
