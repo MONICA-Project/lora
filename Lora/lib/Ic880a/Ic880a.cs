@@ -395,11 +395,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     }
 
     private void Reset() {
-      Thread.Sleep(150);
-      this.PinReset.Write(GpioPinValue.Low);
-      this.PinReset.Write(GpioPinValue.High);
-      this.PinReset.Write(GpioPinValue.Low);
-      Thread.Sleep(150);
       this.SPIwriteRegisterRaw(0, 128);
       this.SPIwriteRegisterRaw(0, 0);
       Thread.Sleep(32); // provide at least 16 cycles on CLKHS and 16 cycles CLK32M
@@ -1009,10 +1004,14 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     #endregion
     
     private void SetupIO() {
-      Pi.Spi.SetProperty("Channel" + this.SpiChannel.Channel.ToString() + "Frequency", 100000.ToString());
-      this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
       this.PinReset.PinMode = GpioPinDriveMode.Output;
       this.PinReset.Write(GpioPinValue.High);
+      Console.WriteLine("Reset Hardware!");
+      Thread.Sleep(1000);
+      this.PinReset.Write(GpioPinValue.Low);
+      Thread.Sleep(1000);
+      this.PinChipSelect.PinMode = GpioPinDriveMode.Output;
+      Pi.Spi.SetProperty("Channel" + this.SpiChannel.Channel.ToString() + "Frequency", 100000.ToString());
     }
   }
 }
