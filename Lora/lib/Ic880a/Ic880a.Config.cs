@@ -46,13 +46,18 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     
     private readonly Int32[] _interfaceFrequency = new Int32[10];
     private BW _loraBandwidth = BW.BW_250KHZ;
-    private BW _fskBandwidth = BW.BW_125KHZ;
-    private SF _loraSpreadingFactor = SF.DR_LORA_SF7;
+    private BW _fskBandwidth = BW.BW_125KHZ; 
+    private SF _loraSpreadingFactor = SF.DR_LORA_SF10;
     private UInt32 _fskDatarate = 50000;
     private readonly Byte _fskSyncWordSize = 3;
     private readonly UInt64 _fskSyncWord = 0xC194C1;
-    private Boolean _CrcEnabled = true;
     private Boolean _lorawan_public = false;
+
+    private BW _loraSendBandwidth = BW.BW_125KHZ;
+    private CR _loraSendCodeRate = CR.CR_LORA_4_5;
+    private Byte _loraSendPreeamble = 6;
+    private SF _loraSendSpreadingFactor = SF.DR_LORA_SF9;
+    private Boolean _CrcEnabled = true;
 
     #region Sending Parameters
     private readonly SByte[] _cal_offset_a_i = new SByte[8];
@@ -64,10 +69,12 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     private Thread _recieverThread;
     private Boolean _recieverThreadRunning = false;
-    //private Boolean _isrecieving = false;
     private Boolean _istransmitting = false;
     private readonly Object HandleControllerIOLock = new Object();
     private Boolean _deviceStarted = false;
+    private Boolean _SendTimeout;
+    private Double _dataRate;
+
 
     private void ParseConfig() {
       try {
@@ -82,12 +89,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
           this._radioEnabled[1] = true;
           this._radioFrequency[1] = UInt32.Parse(this.config["frequency1"]);
         }
-        /*if(this.config.ContainsKey("radio0tx") && this._radioEnabled[0]) {
-          this._radioEnableTx[0] = Boolean.Parse(this.config["radio0tx"]);
-        }
-        if(this.config.ContainsKey("radio1tx") && this._radioEnabled[1]) {
-          this._radioEnableTx[1] = Boolean.Parse(this.config["radio1tx"]);
-        }*/
         for(Byte i = 0; i < 10; i++) {
           if(this.config.ContainsKey("interface" + i + "frequency")) {
             Int32 offset = Int32.Parse(this.config["interface" + i + "frequency"]);
@@ -111,11 +112,27 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         Int32 lbwc = Int32.Parse(this.config["lorabandwith"]);
         this._loraBandwidth = lbwc <= 7800 ? BW.BW_7K8HZ : lbwc <= 15600 ? BW.BW_15K6HZ : lbwc <= 31250 ? BW.BW_31K2HZ : lbwc <= 62500 ? BW.BW_62K5HZ : lbwc <= 125000 ? BW.BW_125KHZ : lbwc <= 250000 ? BW.BW_250KHZ : BW.BW_500KHZ;
 
+        Int32 sbwc = Int32.Parse(this.config["sendbw"]);
+        this._loraSendBandwidth = sbwc <= 7800 ? BW.BW_7K8HZ : sbwc <= 15600 ? BW.BW_15K6HZ : sbwc <= 31250 ? BW.BW_31K2HZ : sbwc <= 62500 ? BW.BW_62K5HZ : sbwc <= 125000 ? BW.BW_125KHZ : sbwc <= 250000 ? BW.BW_250KHZ : BW.BW_500KHZ;
+
         Byte sf = Byte.Parse(this.config["loraspreadingfactor"]);
         this._loraSpreadingFactor = sf <= 7 ? SF.DR_LORA_SF7 : sf <= 8 ? SF.DR_LORA_SF8 : sf <= 9 ? SF.DR_LORA_SF9 : sf <= 10 ? SF.DR_LORA_SF10 : sf <= 11 ? SF.DR_LORA_SF11 : SF.DR_LORA_SF12;
 
+        Byte ssf = Byte.Parse(this.config["sendsf"]);
+        this._loraSendSpreadingFactor = ssf <= 7 ? SF.DR_LORA_SF7 : ssf <= 8 ? SF.DR_LORA_SF8 : ssf <= 9 ? SF.DR_LORA_SF9 : ssf <= 10 ? SF.DR_LORA_SF10 : ssf <= 11 ? SF.DR_LORA_SF11 : SF.DR_LORA_SF12;
+
         Int32 fbwc = Int32.Parse(this.config["fskbandwith"]);
         this._fskBandwidth = fbwc <= 7800 ? BW.BW_7K8HZ : fbwc <= 15600 ? BW.BW_15K6HZ : fbwc <= 31250 ? BW.BW_31K2HZ : fbwc <= 62500 ? BW.BW_62K5HZ : fbwc <= 125000 ? BW.BW_125KHZ : fbwc <= 250000 ? BW.BW_250KHZ : BW.BW_500KHZ;
+
+        this._loraSendCodeRate = Byte.Parse(this.config["sendcr"]) switch {
+          5 => CR.CR_LORA_4_5,
+          6 => CR.CR_LORA_4_6,
+          7 => CR.CR_LORA_4_7,
+          8 => CR.CR_LORA_4_8,
+          _ => throw new Exception("sendcr only can 5-8")
+        };
+
+        this._loraSendPreeamble = Byte.Parse(this.config["sendpreamble"]);
 
         this._fskDatarate = UInt32.Parse(this.config["fskdatarate"]);
 
@@ -124,24 +141,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         this._lorawan_public = Boolean.Parse(this.config["lorawan"]);
 
         this.LbtParseConfig();
-
-
-        //this.PinChipSelect = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_sspin"]);
-        //this.PinInt0 = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_dio0"]);
-        //this.PinReset = (GpioPin)Pi.Gpio.GetProperty(this.config["pin_rst"]);
-        //this.SpiChannel = (SpiChannel)Pi.Spi.GetProperty(this.config["spichan"]);
-
-        //this._freq = Int32.Parse(this.config["freq"]);
-        //this._sf = Byte.Parse(this.config["sf"]);
-        //this._bw = Int32.Parse(this.config["bw"]);
-        //this._cr = Byte.Parse(this.config["cr"]);
-
-        //this._syncWord = Byte.Parse(this.config["syncword"]);
-        //this._preambleLength = UInt16.Parse(this.config["preamblelength"]);
-
-        //this._currentLimit = Byte.Parse(this.config["currentlimit"]);
-        //this._power = SByte.Parse(this.config["power"]);
-        //this._gain = Byte.Parse(this.config["gain"]);
       } catch(Exception e) {
         throw new ArgumentException("Some Argument is not set in settings.ini: " + e.Message);
       }

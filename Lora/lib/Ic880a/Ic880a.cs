@@ -50,7 +50,6 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.SetupIO();
       this.Reset();
       this.Connect();
-      this.SoftReset(); //reset the registers (also shuts the radios down)
       this.StartRadio();
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.Begin(): Succsessfull init Ic880a-board with SX1231 Chip!");
     }
@@ -69,17 +68,24 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     public override void Send(Byte[] data, Byte @interface) {
       SendingPacket p = this.PrepareSend(data, @interface);
-      this._istransmitting = true;
-      if(this._deviceStarted) {
+      Ic880aTransmittedObj d = new Ic880aTransmittedObj {
+        Data = data,
+        Msgtolong = p.payload.Length > 255
+      };
+      if(this._deviceStarted && !d.Msgtolong) {
+        this._istransmitting = true;
         lock(this.HandleControllerIOLock) {
           try {
             this.Transmit(p);
-          } catch (Exception e) {
+            d.Datarate = this._dataRate;
+            d.Txtimeout = this._SendTimeout;
+          } catch(Exception e) {
             Helper.WriteError(e.Message);
           }
         }
+        this._istransmitting = false;
       }
-      this._istransmitting = false;
+      this.RaiseTransmittedEvent(d);
     }
 
     public override void StartEventRecieving() {
@@ -92,10 +98,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
     #region Private Methodes
     private void StartRadio() {
-      this.RegisterWrite(Registers.GLOBAL_EN, 0); //gate clocks
+      //reset the registers (also shuts the radios down)
+      this.SoftReset();
+
+      //gate clocks
+      this.RegisterWrite(Registers.GLOBAL_EN, 0); 
       this.RegisterWrite(Registers.CLK32M_EN, 0);
-      
-      this.RegisterWrite(Registers.RADIO_A_EN, 1); //switch on and reset the radios (also starts the 32 MHz XTAL)
+
+      //switch on and reset the radios (also starts the 32 MHz XTAL)
+      this.RegisterWrite(Registers.RADIO_A_EN, 1); 
       this.RegisterWrite(Registers.RADIO_B_EN, 1);
       Thread.Sleep(500);
       this.RegisterWrite(Registers.RADIO_RST, 1);
@@ -105,8 +116,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.SetupSx125x(0, 1, this._radioEnabled[0], RadioType.SX1257, this._radioFrequency[0]);
       this.SetupSx125x(1, 1, this._radioEnabled[1], RadioType.SX1257, this._radioFrequency[1]);
 
-      this.RegisterWrite(Registers.GPIO_MODE, 31); // gives AGC control of GPIOs to enable Tx external digital filter 
-      this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); // Set all GPIOs as output 
+      // gives AGC control of GPIOs to enable Tx external digital filter 
+      this.RegisterWrite(Registers.GPIO_MODE, 31); // Set all GPIOs as output 
+      this.RegisterWrite(Registers.GPIO_SELECT_OUTPUT, 0); 
 
       // Configure LBT 
       if(this._lbt_enabled) {
@@ -154,7 +166,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this.RegisterWrite(Registers.PAGE_REG, 3); // Calibration will start on this condition as soon as MCU can talk to concentrator registers 
       this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 0); // Give control of concentrator registers to MCU 
 
-      Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); // Wait for calibration to end 
+      //Console.WriteLine("Note: calibration started (time: "+ cal_time + " ms)"); // Wait for calibration to end 
       Thread.Sleep(cal_time); // Wait for end of calibration 
       this.RegisterWrite(Registers.EMERGENCY_FORCE_HOST_CTRL, 1); // Take back control 
 
@@ -489,7 +501,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
       tx_start_delay = 1497 - bw_delay_us - notch_delay_us;
 
-      Console.WriteLine("INFO: tx_start_delay=" + (UInt16)tx_start_delay + " (" + tx_start_delay + ") - (" + 1497 + ", bw_delay=" + bw_delay_us + ", notch_delay=" + notch_delay_us + ")");
+      //Console.WriteLine("INFO: tx_start_delay=" + (UInt16)tx_start_delay + " (" + tx_start_delay + ") - (" + 1497 + ", bw_delay=" + bw_delay_us + ", notch_delay=" + notch_delay_us + ")");
 
       return (UInt16)tx_start_delay; // keep truncating instead of rounding: better behaviour measured 
     }
@@ -887,7 +899,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // Set MSB-1 bit to enable digital filter if required 
         if (tx_notch_enable == true) {
-          Console.WriteLine("INFO: Enabling TX notch filter");
+          //Console.WriteLine("INFO: Enabling TX notch filter");
           buff[0] |= 0x40;
         }
       } else if (pkt_data.modulation == Modulation.Fsk) {
@@ -953,6 +965,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       //DEBUG_ARRAY(i, transfer_size, buff);
 
       Boolean tx_allowed = this.LbtIsChannelFree(pkt_data, tx_start_delay);
+      DateTime start = DateTime.Now;
       if (tx_allowed == true) {
         switch (pkt_data.tx_mode) {
           case SendingMode.IMMEDIATE:
@@ -973,22 +986,26 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       } else {
         throw new Exception("ERROR: Cannot send packet, channel is busy (LBT)");
       }
-
-      while (true) {
-        Int32 reg = this.RegisterRead(Registers.TX_STATUS);
-        if ((reg & 0x10) == 0) {
-          return;
-        }
+      UInt16 j = 0;
+      Int32 reg;
+      do {
         Thread.Sleep(1);
-      }
+        reg = this.RegisterRead(Registers.TX_STATUS);
+        //Console.Write(reg + ":");
+        j++;
+      } while((reg & 0x10) != 0 && j < 1000);
+      this._dataRate = pkt_data.payload.Length * 8.0 / ((DateTime.Now - start).TotalMilliseconds / 1000);
+      this._SendTimeout = j >= 1000;
+      //this.RegisterWrite(Registers.RX_PACKET_DATA_FIFO_NUM_STORED, 0);
+      //Console.WriteLine("TX, done.");
     }
 
     private SendingPacket PrepareSend(Byte[] data, Byte @interface) => new SendingPacket {
-      bandwidth = this._loraBandwidth,
-      coderate = CR.CR_LORA_4_7,
+      bandwidth = this._loraSendBandwidth,
+      coderate = this._loraSendCodeRate,
       count_us = 0,
       datarate_fsk = 0,
-      datarate_lora = this._loraSpreadingFactor,
+      datarate_lora = this._loraSendSpreadingFactor,
       freq_hz = (UInt32)(this._radioFrequency[(Byte)this._interfaceChain[@interface]] + this._interfaceFrequency[@interface]),
       f_dev = 0,
       invert_pol = false,
@@ -996,9 +1013,9 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       no_crc = false,
       no_header = false,
       payload = data,
-      preamble = 0,
-      rf_chain = (Byte)this._interfaceChain[@interface],
-      rf_power = 20,
+      preamble = this._loraSendPreeamble,
+      rf_chain = 0,
+      rf_power = 10,
       tx_mode = SendingMode.IMMEDIATE
     };
     #endregion

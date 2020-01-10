@@ -474,7 +474,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       Byte u = this.SPIreadRegister(Registers.VERSION.Address, 0x1);
       if(!this.CheckFpgaVersion(u)) {
         // We failed to read expected FPGA version, so let's assume there is no FPGA 
-        Console.WriteLine("INFO: no FPGA detected or version not supported (v" + u + ")");
+        //Console.WriteLine("INFO: no FPGA detected or version not supported (v" + u + ")");
         //lgw_spi_mux_mode = LGW_SPI_MUX_MODE0;
       } else {
         Console.WriteLine("INFO: detected FPGA with SPI mux header (v%u)\n", u);
@@ -483,7 +483,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
         this.SPIwriteRegisterRaw(0, 1, 0x1);
         this.SPIwriteRegisterRaw(0, 0, 0x1);
         // FPGA configure 
-        this.FpgaConfigure(0);
+        this.FpgaConfigure(129000);
       }
 
       // check SX1301 version 
@@ -494,7 +494,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       // write 0 to the page/reset register 
       this.PageSwitch(0);
 
-      Console.WriteLine("Note: success connecting the concentrator");
+      //Console.WriteLine("Note: success connecting the concentrator");
     }
 
     private void SoftReset() => this.RegisterWrite(Registers.SOFT_RESET, 1);

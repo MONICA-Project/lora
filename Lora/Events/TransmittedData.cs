@@ -5,5 +5,17 @@ namespace Fraunhofer.Fit.Iot.Lora.Events {
     public Byte[] Data {
       get; set;
     }
+
+    public Boolean Msgtolong {
+      get; set;
+    } = false;
+
+    public Boolean Txtimeout {
+      get; set;
+    } = false;
+
+    public Double Datarate {
+      get; set;
+    }
   }
 }

@@ -2,15 +2,7 @@
 
 namespace Fraunhofer.Fit.Iot.Lora.Events {
   public class DragionoTransmittedObj : TransmittedData {
-    public Double Datarate {
-      get; set;
-    }
-    public Boolean Msgtolong {
-      get; set;
-    } = false;
-    public Boolean Txtimeout {
-      get; set;
-    } = false;
+
     public Int16 Errorcode {
       get; set;
     }
