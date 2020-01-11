@@ -557,7 +557,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         p.Radio = Ic880aRecievedObj.ParseRadio(this._interfaceChain[p.Interface]);
         p.Frequency = (UInt32)((Int32)this._radioFrequency[p.Radio] + this._interfaceFrequency[p.Interface]);
-        p.Rssi = buff2[sz + 5] + -166;
+        p.Rssi = buff2[sz + 5] + this._rf_rssi_offset[p.Radio];
 
         Boolean crc_en = false;
         UInt32 timestamp_correction;

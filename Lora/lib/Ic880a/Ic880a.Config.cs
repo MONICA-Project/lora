@@ -39,8 +39,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
     private readonly Boolean[] _radioEnabled = new Boolean[2];
     private readonly UInt32[] _radioFrequency = new UInt32[2];
     private readonly RadioType[] _rf_radio_type = new RadioType[] { RadioType.SX1257, RadioType.SX1257 };
-
     private readonly Boolean[] _radioEnableTx = new Boolean[2] { true, false };
+    private readonly Single[] _rf_rssi_offset = new Single[2] { -166, -166 };
+    private readonly UInt32[] _rf_tx_notch_freq = new UInt32[2] { 129000, 129000 };
+
     private readonly Boolean[] _interfaceEnabled = new Boolean[10];
     private readonly Reciever[] _interfaceChain = new Reciever[10];
     
@@ -140,7 +142,15 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         this._lorawan_public = Boolean.Parse(this.config["lorawan"]);
 
-        this.LbtParseConfig();
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.ParseConfig(): board configuration: lorawan_public:" + this._lorawan_public + ", clksrc:1");
+        for(Byte i = 0; i < 2; i++) {
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.ParseConfig(): rf_chain " + i + " configuration; en:" + this._radioEnabled[i] + " freq:" + this._radioFrequency[i] + " rssi_offset:" + this._rf_rssi_offset[i] + " radio_type:" + this._rf_radio_type[i] + " tx_enable:" + this._radioEnableTx[i] + " tx_notch_freq:"+ this._rf_tx_notch_freq[i]);
+        }
+        for(Byte i = 0; i < 8; i++) {
+          Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.ParseConfig(): LoRa 'multi' if_chain "+i+" configuration; en:"+ this._interfaceEnabled[i] + " freq:"+ this._interfaceFrequency[i] + " SF_mask:0x7E");
+        }
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.ParseConfig(): LoRa 'std' if_chain 8 configuration; en:" + this._interfaceEnabled[8] + " freq:" + this._interfaceFrequency[8] + " bw:"+ this._loraBandwidth + " dr:"+ this._loraSpreadingFactor);
+        Console.WriteLine("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.ParseConfig(): FSK if_chain 9 configuration; en:" + this._interfaceEnabled[9] + " freq:" + this._interfaceFrequency[9] + " bw:" + this._fskBandwidth + " dr:" + this._fskDatarate + " (" + this._fskDatarate * 2 + " real dr) sync:0xC194C1");
       } catch(Exception e) {
         throw new ArgumentException("Some Argument is not set in settings.ini: " + e.Message);
       }
