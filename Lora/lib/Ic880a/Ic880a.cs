@@ -63,6 +63,10 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
       this._recieverThread = null;
       this.SoftReset(); //reset the registers (also shuts the radios down)
       this.SPIwriteRegisterRaw(0, 128);
+      this.PinReset.Write(GpioPinValue.High);
+      Console.WriteLine("Reset Hardware!");
+      Thread.Sleep(500);
+      this.PinReset.Write(GpioPinValue.Low);
       this.Debug("Fraunhofer.Fit.Iot.Lora.lib.Ic880a.Ic880a.Dispose(): Succsessfull shutdown Ic880a-board with SX1231 Chip!");
     }
 
