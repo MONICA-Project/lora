@@ -3,7 +3,7 @@
 
 ### New Features
 * Dragino board now support Sending data while listen on receiving data
-* Now netcore is supported
+* Ic880A also now support sending data
 
 ### Bugfixes
 
@@ -14,6 +14,7 @@
 * Split Ic800A into different files
 * Fix Thread abort in netcore
 * Using new WiringPi lib
+* Porting to .NET Core
 
 ## 1.8.4
 ### New Features
