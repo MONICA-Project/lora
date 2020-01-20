@@ -504,7 +504,7 @@ namespace Fraunhofer.Fit.Iot.Lora.lib.Ic880a {
 
         // start and PLL lock 
         do {
-          if(cpt_attempts >= 5) {
+          if(cpt_attempts >= 50) {
             throw new Exception("ERROR: FAIL TO LOCK PLL");
           }
           this.Sx125xWrite(rf_chain, 0x00, 1); // enable Xtal oscillator 
