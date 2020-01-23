@@ -1,4 +1,21 @@
 # Changelog
+## 2.0.0 - The total rewrite
+
+### New Features
+* Dragino board now support Sending data while listen on receiving data
+* Ic880A also now support sending data
+
+### Bugfixes
+
+### Changes
+* Rewrite LoraController and the rest so that it did not parse any data
+* Rewrite Dragino driver complete
+* Remove all parsing data stuff, that must now be done in the programm that call the lib
+* Split Ic800A into different files
+* Fix Thread abort in netcore
+* Using new WiringPi lib
+* Porting to .NET Core
+
 ## 1.8.4
 ### New Features
 ### Bugfixes
