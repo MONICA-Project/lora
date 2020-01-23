@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -7,7 +7,7 @@
     <Company>Fraunhofer FIT</Company>
     <Authors>BlubbFish</Authors>
     <Product>Lora</Product>
-    <Copyright>Copyright © Fraunhofer FIT, BlubbFish 2018 - 19.12.2019</Copyright>
+    <Copyright>Copyright © Fraunhofer FIT, BlubbFish 2018 - 23.01.2020</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/MONICA-Project/lora</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MONICA-Project/lora.git</RepositoryUrl>
